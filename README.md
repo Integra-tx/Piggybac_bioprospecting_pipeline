@@ -11,10 +11,10 @@ A Python-based bioinformatics pipeline for recovering piggyBac transposons and t
 Install dependencies:
 pip install
 
-git clone https://github.com/yourusername/bioprospecting_pipeline.git
+git clone https://github.com/Integra-tx/Piggybac_bioprospecting_pipeline
 cd bioprospecting_pipeline
 python3 -m pip install -r requirements.txt
-python3 bioprospecting_pipeline/main.py -i input.fasta -o output
+python3 bioprospecting_pipeline/main.py
 
 Additional requirements:
 
