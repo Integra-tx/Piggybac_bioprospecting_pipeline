@@ -12,8 +12,11 @@ Install dependencies:
 pip install
 
 git clone https://github.com/Integra-tx/Piggybac_bioprospecting_pipeline
+
 cd bioprospecting_pipeline
+
 python3 -m pip install -r requirements.txt
+
 python3 bioprospecting_pipeline/main.py
 
 Additional requirements:
