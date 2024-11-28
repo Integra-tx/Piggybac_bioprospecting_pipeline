@@ -346,10 +346,12 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
 
             if run_check:
                 with open(dna_filename, 'w') as trad:
+                    count = 0
                     for record in SeqIO.parse(f"{final_path}", "fasta"):
+                        count += 1
                         for ids in identity_list:
                             if record.id == ids.split("|")[1]:
-                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','')
+                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','') + '_' + str(count) + '\n'
                                 trad.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
@@ -714,6 +716,7 @@ def run_palindrome(accession1, mistakes, sequence):
     alt_accession = alt_accession.replace(')','_')
     alt_accession = alt_accession.replace('>','')
     alt_accession = alt_accession.strip()
+
     # Generate input file for the 'palindrome' program
     temporal_file_name = f'Temporal_palindrome_{alt_accession}.txt'
     with open(temporal_file_name, "w") as temporal:
@@ -726,12 +729,8 @@ def run_palindrome(accession1, mistakes, sequence):
                'no']
     # Execute the palindrome command and capture the output
     result = subprocess.run(command, capture_output=True, text=True)
-    try:
-        os.remove(temporal_file_name)
-    except:
-        print(accession)
-        print(sequence)
     os.remove(temporal_file_name)
+
 
     # Read the output file from the 'palindrome' program
     with open(temporal_palindrome_name, "r") as temporal_line:
@@ -826,6 +825,7 @@ def run_palindrome(accession1, mistakes, sequence):
                         similar_tuples.append(tuple_to)
 
     os.remove(temporal_palindrome_name)
+    
     keys_to_remove = []
 
     if itr_dictionary:
@@ -1526,4 +1526,3 @@ def get_paths(file, input_path, type_list, output):
     # Return a list of the paths
     return genome_paths
     
-
