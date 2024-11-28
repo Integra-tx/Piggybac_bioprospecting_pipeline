@@ -1,0 +1,39 @@
+# Configuration for the bioprospecting pipeline
+
+# Input and output paths
+input_path: "./example_data"               # Path to the input directory containing genome files
+output_path: "./results"                  # Path to save the output files
+
+# Pipeline steps
+pipeline_step: 3                         # Pipeline step to run (1, 2, 3, 4, or 5)
+
+# Frahmmer settings
+seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
+orf_length: 400                          # Minimum ORF length to be searched (in amino acids)
+
+# Palindrome matching settings
+mistake: 2                               # Number of mistakes allowed in palindrome matching
+itr: 2                                   # Minimum number of palindromes to consider for ITRs
+motif1: "TTAAC"                           # First motif to be searched
+motif2: "GAATT"                           # Second motif (can be optional or set to 0)
+
+# Sequence extraction settings
+extension: 1000                          # Length of the flanking DNA regions to be extracted
+
+# Clustering options
+full_output: true                        # If true, save the full output from the pipeline
+
+# TTAA specific search settings
+ttaa_call: false                         # Whether to perform TTAA-specific palindrome search
+
+# Ray parallel processing options
+ray_workers: 4                           # Number of workers to run in parallel
+
+blast_path: "/home/alejandroagudelo/Documents/Blast/ncbi-blast-2.14.0+-x64-linux/ncbi-blast-2.14.0+/bin/rpsblast"  #Blast executable path
+
+blast_db: "/home/alejandroagudelo/Documents/Blast/cdd/Pfam" #Blast database path
+
+taxonomy_file: "./extra_files/Taxonomy_clasification_complete.txt" #Taxonomy reference file path for NCBI
+
+colculate_cons: "./extra_files/calculate_cons_for_clustal_50.py" #Cons script
+
