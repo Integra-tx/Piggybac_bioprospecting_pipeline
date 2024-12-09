@@ -2,6 +2,5 @@ Bio==1.7.1
 biopython==1.79
 pandas==1.5.3
 PyYAML==6.0.2
-ray==2.7.1
-fnmatch2==0.0.8
+ofnmatch2==0.0.8
 
