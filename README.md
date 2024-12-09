@@ -60,12 +60,19 @@ echo $PATH
 #Download and install EMBOSS:
 
 wget -m 'ftp://emboss.open-bio.org/pub/EMBOSS/'
+
 cd emboss.open-bio.org/pub/EMBOSS/
+
 gunzip EMBOSS-latest.tar.gz
+
 tar xf EMBOSS-latest.tar
+
 cd EMBOSS-6.0.1
+
 ./configure --prefix=/usr/local/emboss --without-x
+
 make
+
 sudo make install
 
 #Add EMBOSS to your PATH:
