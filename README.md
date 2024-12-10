@@ -154,6 +154,8 @@ source ~/.bashrc
 To install the BLAST Database, follow these steps:
 
 ```bash
+mkdir database
+cd database
 wget ftp.ncbi.nih.gov/pub/mmdb/cdd/cdd.tar.gz
 tar -xf cdd.tar.gz
 ./bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/makeprofiledb -title Pfam.v.26.0 -in Pfam.pn -out Pfam -threshold 9.82 -scale 100.0 -dbtype rps -index true
