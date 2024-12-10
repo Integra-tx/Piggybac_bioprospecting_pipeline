@@ -492,7 +492,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
     if domain_dicts:
-        domain_check == True
+        domain_check = True
         if len(domain_dicts) == 1:
             if not domain_dicts[0]:
                 domain_check = False
