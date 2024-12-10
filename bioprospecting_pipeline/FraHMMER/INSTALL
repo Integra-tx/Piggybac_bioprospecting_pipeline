@@ -1,0 +1,18 @@
+Brief installation instructions 
+FraHMMER (Oct 2022)
+
+Install source code from GitHub:
+   git clone https://github.com/TravisWheelerLab/FraHMMER.git
+   cd FraHMMER
+   git clone https://github.com/TravisWheelerLab/easel
+   (cd easel; git checkout develop)
+   autoconf
+   ./configure
+   make
+   make check                        # optional: automated tests
+   make install                      # optional: install FraHMMER programs and man pages
+
+
+
+
+
