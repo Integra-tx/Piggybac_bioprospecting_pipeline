@@ -174,6 +174,13 @@ tar -xf cdd.tar.gz
 conda install -c conda-forge -c bioconda mmseqs2
 ```
 
+#### Instal Mafft
+```bash
+sudo apt install rpm
+sudo rpm -Uvh mafft-7.526-gcc_fc6.x86_64.rpm
+mafft --version
+```
+
 #### Build the Frahmmer Program
 Finally, build the Frahmmer program that comes with the repository:
 
