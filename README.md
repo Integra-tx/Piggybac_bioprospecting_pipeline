@@ -1,105 +1,184 @@
 
-Bioprospecting Pipeline
-A Python-based bioinformatics pipeline for recovering piggyBac transposons and transposases from genomes.
+![header](imgs/header.jpg)
 
-Features
-- Searches for sequences in genomes through HMM search.
+# Bioprospecting Pipeline
+
+This Python-based bioinformatics pipeline is designed for recovering piggyBac transposons and transposases from genomes.
+
+## Features
+- Searches for sequences in genomes through an HMM search.
 - Aligns DNA sequences with MAFFT.
 - Identifies palindromes and specific motifs.
 - Outputs annotated sequence alignments.
 
-Quick Start
+## Quick Start
 
-Install dependencies:
-$ pip install
-
-Clone the repository:
-$ git clone https://github.com/Integra-tx/Piggybac_bioprospecting_pipeline
-
-Navigate into the directory:
-$ cd bioprospecting_pipeline
-
+### Install Dependencies
 Install the required Python packages:
-$ python3 -m pip install -r requirements.txt
 
-Run the pipeline:
-$ python3 bioprospecting_pipeline/main.py
+```bash
+pip install
+```
 
-Additional Requirements
+### Clone the Repository
+Clone the Bioprospecting Pipeline repository:
 
-1. Update your system:
-$ sudo apt-get update
-$ sudo apt-get upgrade -y
+```bash
+git clone https://github.com/Integra-tx/Piggybac_bioprospecting_pipeline
+```
 
-2. Install Ray (Required for parallel processing):
-$ pip3 install ray
+Navigate to the project folder:
 
-3. Verify Ray installation:
-$ python3 -c "import ray; ray.init()"
+```bash
+cd bioprospecting_pipeline
+```
 
-4. Add Python’s Local Bin Directory to PATH:
-- Open the ~/.bashrc file:
-$ nano ~/.bashrc
-- Add the following line at the end:
-$ export PATH="$HOME/.local/bin:$PATH"
-- Save the file:
-  Press CTRL + O to save.
-  Press CTRL + X to exit the editor.
-- Reload the configuration:
-$ source ~/.bashrc
-- Verify the change:
-$ echo $PATH
+Install Python dependencies:
 
-5. Install EMBOSS:
-- Download and install EMBOSS:
-$ wget -m 'ftp://emboss.open-bio.org/pub/EMBOSS/'
-- Extract and install:
-$ cd emboss.open-bio.org/pub/EMBOSS/
-$ gunzip EMBOSS-latest.tar.gz
-$ tar xf EMBOSS-latest.tar
-$ cd EMBOSS-6.0.1
-$ ./configure --prefix=/usr/local/emboss --without-x
-$ make
-$ sudo make install
+```bash
+python3 -m pip install -r requirements.txt
+```
 
-- Add EMBOSS to your PATH:
-- Open ~/.bashrc:
-$ nano ~/.bashrc
-- Add this line:
-$ PATH="$PATH:/usr/local/emboss/bin"
-$ export PATH
-- Reload the configuration:
-$ source ~/.bashrc
-- Verify the installation:
-$ embossversion
+Run the main pipeline:
 
-6. Install BLAST:
-- Install ncftp:
-$ sudo apt-get install ncftp -y
-- Download BLAST using ncftp:
-$ ncftp ftp.ncbi.nlm.nih.gov
-$ cd /blast/executables/LATEST/
-$ bin
-$ ls
-$ get <latest BLAST tar.gz for Linux>
-$ bye
+```bash
+python3 bioprospecting_pipeline/main.py
+```
 
-- Extract and install:
-$ tar zxvpf ncbi-blast-<version>-x64-linux.tar.gz
-$ nano ~/.bashrc
-- Add this line:
-$ export PATH=$PATH:$HOME/config_files/ncbi-blast-<version>/bin
-- Reload the configuration:
-$ source ~/.bashrc
+### Additional Requirements
 
-Install the BLAST Database
-- Download the database:
-$ wget ftp.ncbi.nih.gov/pub/mmdb/cdd/cdd.tar.gz
-$ tar -xf cdd.tar.gz
-- Create the BLAST database:
-$ ./bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/makeprofiledb -title Pfam.v.26.0 -in Pfam.pn -out Pfam -threshold 9.82 -scale 100.0 -dbtype rps -index true
+#### Update System
+To update the system packages, use:
 
-7. Install the Frahmmer program:
-$ ./configure
-$ make
-$ make install
+```bash
+sudo apt-get update
+sudo apt-get upgrade -y
+```
+
+#### Install Ray
+Ray is required for parallel processing. Install it using pip:
+
+```bash
+pip3 install ray
+```
+
+Verify the installation of Ray:
+
+```bash
+python3 -c "import ray; ray.init()"
+```
+
+#### Add Python’s Local Bin Directory to PATH
+To make sure all installed tools are accessible, add Python’s local bin directory to the PATH. Open the `.bashrc` file:
+
+```bash
+nano ~/.bashrc
+```
+
+Add the following line at the end:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Save and exit the file (Press `CTRL + O` to save and `CTRL + X` to exit).
+
+Reload the configuration:
+
+```bash
+source ~/.bashrc
+```
+
+Verify the change:
+
+```bash
+echo $PATH
+```
+
+#### Install EMBOSS
+To install EMBOSS, follow these steps:
+
+```bash
+wget -m 'ftp://emboss.open-bio.org/pub/EMBOSS/'
+cd emboss.open-bio.org/pub/EMBOSS/
+gunzip EMBOSS-latest.tar.gz
+tar xf EMBOSS-latest.tar
+cd EMBOSS-6.0.1
+./configure --prefix=/usr/local/emboss --without-x
+make
+sudo make install
+```
+
+Add EMBOSS to the PATH by editing `.bashrc`:
+
+```bash
+nano ~/.bashrc
+```
+
+Add the following line:
+
+```bash
+PATH="$PATH:/usr/local/emboss/bin"
+export PATH
+```
+
+Save and exit, then reload:
+
+```bash
+source ~/.bashrc
+```
+
+Verify the installation:
+
+```bash
+embossversion
+```
+
+#### Install BLAST
+To install BLAST, use the following commands:
+
+```bash
+sudo apt-get install ncftp -y
+ncftp ftp.ncbi.nlm.nih.gov
+cd /blast/executables/LATEST/
+bin
+ls
+get <latest BLAST tar.gz for Linux>
+bye
+```
+
+Extract and install BLAST:
+
+```bash
+tar zxvpf ncbi-blast-<version>-x64-linux.tar.gz
+nano ~/.bashrc
+```
+
+Add this line:
+
+```bash
+export PATH=$PATH:$HOME/config_files/ncbi-blast-<version>/bin
+source ~/.bashrc
+```
+
+To install the BLAST Database, follow these steps:
+
+```bash
+wget ftp.ncbi.nih.gov/pub/mmdb/cdd/cdd.tar.gz
+tar -xf cdd.tar.gz
+./bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/makeprofiledb -title Pfam.v.26.0 -in Pfam.pn -out Pfam -threshold 9.82 -scale 100.0 -dbtype rps -index true
+```
+
+#### Build the Frahmmer Program
+Finally, build the Frahmmer program that comes with the repository:
+
+```bash
+./configure
+make
+make install
+```
+
+## Citation
+If you use this pipeline in your research, please cite the following:
+
+- [Piggybac Paper](https://doi.org/10.xxxx/piggybac) (example reference)
