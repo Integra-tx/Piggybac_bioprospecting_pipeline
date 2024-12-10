@@ -1,7 +1,7 @@
 # Configuration for the bioprospecting pipeline
 
 # Input and output paths
-input_path: "./example_data"               # Path to the input directory containing genome files
+input_path: "/home/alejandro_af_integra_tx_com/Genomes"               # Path to the input directory containing genome files
 output_path: "./results"                  # Path to save the output files
 
 # Pipeline steps
