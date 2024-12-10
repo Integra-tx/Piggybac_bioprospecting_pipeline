@@ -3,7 +3,8 @@
 A Python-based bioinformatics pipeline for recovering piggyBac transposons and transposases from genomes.
 
 ## Features
-- Searches for sequences in genomes through an HMM search.
+- Searches for sequences in genomes through an HMM search with BATH(Frahmmer)
+Genevieve R Krause, Walt Shands, Travis J Wheeler, Sensitive and error-tolerant annotation of protein-coding DNA with BATH, Bioinformatics Advances, Volume 4, Issue 1, 2024, vbae088, https://doi.org/10.1093/bioadv/vbae088.
 - Aligns DNA sequences with MAFFT.
 - Identifies palindromes and specific motifs.
 - Outputs annotated sequence alignments.
