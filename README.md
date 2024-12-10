@@ -1,6 +1,6 @@
 # Bioprospecting Pipeline
 
-This Python-based bioinformatics pipeline is designed for recovering piggyBac transposons and transposases from genomes.
+A Python-based bioinformatics pipeline for recovering piggyBac transposons and transposases from genomes.
 
 ## Features
 - Searches for sequences in genomes through an HMM search.
@@ -9,13 +9,6 @@ This Python-based bioinformatics pipeline is designed for recovering piggyBac tr
 - Outputs annotated sequence alignments.
 
 ## Quick Start
-
-### Install Dependencies
-Install the required Python packages:
-
-```bash
-pip install
-```
 
 ### Clone the Repository
 Clone the Bioprospecting Pipeline repository:
