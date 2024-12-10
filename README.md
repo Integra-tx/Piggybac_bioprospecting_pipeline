@@ -1,6 +1,3 @@
-
-![header](imgs/header.jpg)
-
 # Bioprospecting Pipeline
 
 This Python-based bioinformatics pipeline is designed for recovering piggyBac transposons and transposases from genomes.
