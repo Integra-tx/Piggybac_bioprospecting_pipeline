@@ -492,12 +492,12 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
     if domain_dicts:
-	try:
-		top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-	except:
-		print(domain_dicts)
-		top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-        
+        try:
+            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
+        except:
+            print(domain_dicts)
+            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
+		
         top_hit['Full_dna'] = sequence
     
         
