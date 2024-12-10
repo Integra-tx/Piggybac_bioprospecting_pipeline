@@ -492,24 +492,24 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
     if domain_dicts:
-        try:
-            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-        except:
-            print(domain_dicts)
-            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-		
-        top_hit['Full_dna'] = sequence
-    
-        
-        species = accession.split('_')
-        species_name = species[0] + '_' + species[1] 
-        if species_name in complete_taxonomy_dict:
-        	taxonomy_classification = complete_taxonomy_dict[species_name]
-        	top_hit['Taxonomy'] = taxonomy_classification
+        if len(domain_dicts) == 1:
+            if domain_dicts[0]:
+                top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
         else:
-            print(f'Taxonomy for {species_name} not found')
-        	
-        return top_hit
+            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
+        if top_hit:
+            top_hit['Full_dna'] = sequence
+        
+            
+            species = accession.split('_')
+            species_name = species[0] + '_' + species[1] 
+            if species_name in complete_taxonomy_dict:
+            	taxonomy_classification = complete_taxonomy_dict[species_name]
+            	top_hit['Taxonomy'] = taxonomy_classification
+            else:
+                print(f'Taxonomy for {species_name} not found')
+            	
+            return top_hit
     else:
         return None
 
