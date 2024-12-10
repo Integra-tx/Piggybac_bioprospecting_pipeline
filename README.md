@@ -1,4 +1,4 @@
-# Bioprospecting Pipeline
+# Discovery and language model-guided design of hyperactive transposases
 
 A Python-based bioinformatics pipeline for recovering piggyBac transposons and transposases from genomes.
 
