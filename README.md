@@ -14,6 +14,7 @@ A Python-based bioinformatics pipeline for recovering piggyBac transposons and t
 - Identifies palindromes and specific motifs with EMBOSS.
   - Rice P., Longden I. and Bleasby A. EMBOSS: The European Molecular Biology Open Software Suite. Trends in Genetics. 2000 16(6):276-277 
 - Outputs annotated sequence alignments.
+- The file calculate cons for clustal was downloaded from https://github.com/fomightez/sequencework.git
 
 ## Quick Start
 
