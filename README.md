@@ -6,7 +6,9 @@ A Python-based bioinformatics pipeline for recovering piggyBac transposons and t
 - Searches for sequences in genomes through an HMM search with BATH(Frahmmer)
   - [https://github.com/TravisWheelerLab/BATH?tab=readme-ov-file ](https://github.com/TravisWheelerLab/BATH.git)
   - Genevieve R Krause, Walt Shands, Travis J Wheeler, Sensitive and error-tolerant annotation of protein-coding DNA with BATH, Bioinformatics Advances, Volume 4, Issue 1, 2024, vbae088, https://doi.org/10.1093/bioadv/vbae088.
-- Aligns DNA sequences with MAFFT.
+- Aligns DNA sequences with MAFFT and Clustalw.
+  - Thompson, J. D., Higgins, D. G., & Gibson, T. J. (1994). CLUSTAL W: improving the sensitivity of progressive multiple sequence alignment through sequence weighting, position-specific gap penalties and weight matrix choice. Nucleic acids research, 22(22), 4673–4680
+  - Kazutaka Katoh, Kazuharu Misawa, Kei‐ichi Kuma, Takashi Miyata, MAFFT: a novel method for rapid multiple sequence alignment based on fast Fourier transform, Nucleic Acids Research, Volume 30, Issue 14, 15 July 2002, Pages 3059–3066, https://doi.org/10.1093/nar/gkf436
 - Identifies palindromes and specific motifs.
 - Outputs annotated sequence alignments.
 
