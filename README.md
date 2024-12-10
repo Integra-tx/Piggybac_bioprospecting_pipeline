@@ -2,19 +2,6 @@
 
 A Python-based bioinformatics pipeline for recovering piggyBac transposons and transposases from genomes.
 
-## Features
-- Searches for sequences in genomes through an HMM search with BATH(Frahmmer)
-  - [https://github.com/TravisWheelerLab/BATH?tab=readme-ov-file ](https://github.com/TravisWheelerLab/BATH.git)
-  - Genevieve R Krause, Walt Shands, Travis J Wheeler, Sensitive and error-tolerant annotation of protein-coding DNA with BATH, Bioinformatics Advances, Volume 4, Issue 1, 2024, vbae088, https://doi.org/10.1093/bioadv/vbae088.
-- Aligns DNA sequences with MAFFT and Clustalw.
-  - Thompson, J. D., Higgins, D. G., & Gibson, T. J. (1994). CLUSTAL W: improving the sensitivity of progressive multiple sequence alignment through sequence weighting, position-specific gap penalties and weight matrix choice. Nucleic acids research, 22(22), 4673–4680
-  - Kazutaka Katoh, Kazuharu Misawa, Kei‐ichi Kuma, Takashi Miyata, MAFFT: a novel method for rapid multiple sequence alignment based on fast Fourier transform, Nucleic Acids Research, Volume 30, Issue 14, 15 July 2002, Pages 3059–3066, https://doi.org/10.1093/nar/gkf436
-- Clusters sequences with MMseqs2
-  - Steinegger, M., Söding, J. MMseqs2 enables sensitive protein sequence searching for the analysis of massive data sets. Nat Biotechnol 35, 1026–1028 (2017) https://doi.org/10.1038/nbt.3988
-- Identifies palindromes and specific motifs with EMBOSS.
-  - Rice P., Longden I. and Bleasby A. EMBOSS: The European Molecular Biology Open Software Suite. Trends in Genetics. 2000 16(6):276-277 
-- Outputs annotated sequence alignments.
-- The file calculate cons for clustal was downloaded from https://github.com/fomightez/sequencework.git
 
 ## Quick Start
 
@@ -190,6 +177,20 @@ Finally, build the Frahmmer program that comes with the repository:
 make
 make install
 ```
+
+## Features
+- Searches for sequences in genomes through an HMM search with BATH(Frahmmer)
+  - [https://github.com/TravisWheelerLab/BATH?tab=readme-ov-file ](https://github.com/TravisWheelerLab/BATH.git)
+  - Genevieve R Krause, Walt Shands, Travis J Wheeler, Sensitive and error-tolerant annotation of protein-coding DNA with BATH, Bioinformatics Advances, Volume 4, Issue 1, 2024, vbae088, https://doi.org/10.1093/bioadv/vbae088.
+- Aligns DNA sequences with MAFFT and Clustalw.
+  - Thompson, J. D., Higgins, D. G., & Gibson, T. J. (1994). CLUSTAL W: improving the sensitivity of progressive multiple sequence alignment through sequence weighting, position-specific gap penalties and weight matrix choice. Nucleic acids research, 22(22), 4673–4680
+  - Kazutaka Katoh, Kazuharu Misawa, Kei‐ichi Kuma, Takashi Miyata, MAFFT: a novel method for rapid multiple sequence alignment based on fast Fourier transform, Nucleic Acids Research, Volume 30, Issue 14, 15 July 2002, Pages 3059–3066, https://doi.org/10.1093/nar/gkf436
+- Clusters sequences with MMseqs2
+  - Steinegger, M., Söding, J. MMseqs2 enables sensitive protein sequence searching for the analysis of massive data sets. Nat Biotechnol 35, 1026–1028 (2017) https://doi.org/10.1038/nbt.3988
+- Identifies palindromes and specific motifs with EMBOSS.
+  - Rice P., Longden I. and Bleasby A. EMBOSS: The European Molecular Biology Open Software Suite. Trends in Genetics. 2000 16(6):276-277 
+- Outputs annotated sequence alignments.
+- The file calculate cons for clustal was downloaded from https://github.com/fomightez/sequencework.git
 
 ## Citation
 If you use this pipeline in your research, please cite the following:
