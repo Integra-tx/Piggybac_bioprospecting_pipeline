@@ -29,9 +29,9 @@ ttaa_call: false                         # Whether to perform TTAA-specific pali
 # Ray parallel processing options
 ray_workers: 4                           # Number of workers to run in parallel
 
-blast_path: "/home/alejandroagudelo/Documents/Blast/ncbi-blast-2.14.0+-x64-linux/ncbi-blast-2.14.0+/bin/rpsblast"  #Blast executable path
+blast_path: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/rpsblast"  #Blast executable path
 
-blast_db: "/home/alejandroagudelo/Documents/Blast/cdd/Pfam" #Blast database path
+blast_db: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/database/Pfam" #Blast database path
 
 taxonomy_file: "./extra_files/Taxonomy_clasification_complete.txt" #Taxonomy reference file path for NCBI
 
