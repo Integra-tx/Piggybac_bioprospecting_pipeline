@@ -173,6 +173,7 @@ tar -xf cdd.tar.gz
 ```bash
 conda install -c conda-forge -c bioconda mmseqs2
 ```
+In order to install with conda a virtual enviorment should be made and should be run with conda. 
 
 #### Instal Mafft
 ```bash
