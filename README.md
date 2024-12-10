@@ -14,6 +14,7 @@ A Python-based bioinformatics pipeline for recovering piggyBac transposons and t
 - Identifies palindromes and specific motifs with EMBOSS.
   - Rice P., Longden I. and Bleasby A. EMBOSS: The European Molecular Biology Open Software Suite. Trends in Genetics. 2000 16(6):276-277 
 - Outputs annotated sequence alignments.
+- The file calculate cons for clustal was downloaded from https://github.com/fomightez/sequencework.git
 
 ## Quick Start
 
@@ -41,6 +42,7 @@ Run the main pipeline:
 ```bash
 python3 bioprospecting_pipeline/main.py
 ```
+In the file config.yaml, put the path to the folder with genomes in input_path, the path for where the output will be generated, the pathe for rspblast and the path for the database for rpsblast. 
 
 ## Additional Requirements
 
@@ -166,6 +168,10 @@ cd database
 wget ftp.ncbi.nih.gov/pub/mmdb/cdd/cdd.tar.gz
 tar -xf cdd.tar.gz
 ./bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/makeprofiledb -title Pfam.v.26.0 -in Pfam.pn -out Pfam -threshold 9.82 -scale 100.0 -dbtype rps -index true
+```
+#### Instal MMseqs2
+```bash
+conda install -c conda-forge -c bioconda mmseqs2
 ```
 
 #### Build the Frahmmer Program
