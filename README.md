@@ -35,7 +35,7 @@ Run the main pipeline:
 python3 bioprospecting_pipeline/main.py
 ```
 
-### Additional Requirements
+## Additional Requirements
 
 #### Update System
 To update the system packages, use:
