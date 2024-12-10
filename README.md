@@ -171,4 +171,4 @@ make install
 ## Citation
 If you use this pipeline in your research, please cite the following:
 
-- [Piggybac Paper](https://doi.org/10.xxxx/piggybac) (example reference)
+- [Discovery and language model-guided design of hyperactive transposase](https://doi.org/10.xxxx/piggybac) 
