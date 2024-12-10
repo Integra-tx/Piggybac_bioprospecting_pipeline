@@ -129,8 +129,11 @@ tar -xf cdd.tar.gz
 ./bioprospecting_pipeline/ncbi-blast-2.16.0+/bin/makeprofiledb -title Pfam.v.26.0 -in Pfam.pn -out Pfam -threshold 9.82 -scale 100.0 -dbtype rps -index true
 
 #Build the Frahmmer program that comes included in the github
+
 ./configure
+
 make
+
 make install  
 
 
