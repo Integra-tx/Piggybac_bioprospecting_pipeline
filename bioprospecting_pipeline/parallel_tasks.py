@@ -747,7 +747,13 @@ def run_palindrome(accession1, mistakes, sequence):
                'no']
     # Execute the palindrome command and capture the output
     result = subprocess.run(command, capture_output=True, text=True)
-    os.remove(temporal_file_name)
+    try:
+        os.remove(temporal_file_name)
+    except:
+        print(alt_accession)
+        print(combined_itr)
+        print(sequence)
+        os.remove(temporal_file_name)
 
 
     # Read the output file from the 'palindrome' program
