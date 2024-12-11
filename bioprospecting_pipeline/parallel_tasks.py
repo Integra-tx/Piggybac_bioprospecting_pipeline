@@ -351,6 +351,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                         count += 1
                         for ids in identity_list:
                             if record.id == ids.split("|")[1]:
+                                ids = ids.strip()
                                 formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','') + '_' + str(count) + '\n'
                                 print(formatted_id)
                                 trad.write(formatted_id)
