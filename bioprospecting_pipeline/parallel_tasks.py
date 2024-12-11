@@ -352,6 +352,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                         for ids in identity_list:
                             if record.id == ids.split("|")[1]:
                                 formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','') + '_' + str(count) + '\n'
+                                print(formatted_id)
                                 trad.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
@@ -492,36 +493,20 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
     if domain_dicts:
-        domain_check = True
-        if len(domain_dicts) == 1:
-            if not domain_dicts[0]:
-                domain_check = False
-        if domain_check: 
-            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-            top_hit['Full_dna'] = sequence
+        top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
         
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
-            top_hit['Full_dna'] = sequence
+        top_hit['Full_dna'] = sequence
+    
         
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
+        species = accession.split('_')
+        species_name = species[0] + '_' + species[1] 
+        if species_name in complete_taxonomy_dict:
+        	taxonomy_classification = complete_taxonomy_dict[species_name]
+        	top_hit['Taxonomy'] = taxonomy_classification
+        else:
+            print(f'Taxonomy for {species_name} not found')
+        	
+        return top_hit
     else:
         return None
 
@@ -596,10 +581,10 @@ def prepare_result(accession, protein_seq, domain_results):
         return {
             "Accession": accession,
             "Taxonomy": '',
-            "Transposase": protein_seq,
+            "Transposase": protein_seq.replace('*',''),
             "Transposon": '',
             "CRD_motif": crd_motif,
-            "DDE": dde_domain,
+            "DDE": dde_domain.replace('*',''),
             "N-term": only_n_term,  
             "No-nterm": no_n_term_seq, 
             "ttaa": '',
