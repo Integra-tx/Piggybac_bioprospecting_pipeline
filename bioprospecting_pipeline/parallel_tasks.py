@@ -730,10 +730,6 @@ def run_palindrome(accession1, mistakes, sequence):
 
     combined_itr = str(sequence[:150]) + " " + str(sequence[len(sequence) - 200:])
     combined_length = len(sequence[:150]) + len(sequence[len(sequence) - 200:])
-    alt_accession = accession1.replace('(','_')
-    alt_accession = alt_accession.replace(')','_')
-    alt_accession = alt_accession.replace('>','')
-    alt_accession = alt_accession.strip()
 
     # Generate input file for the 'palindrome' program
     temporal_file_name = f'Temporal_palindrome_{alt_accession}.txt'
@@ -747,13 +743,6 @@ def run_palindrome(accession1, mistakes, sequence):
                'no']
     # Execute the palindrome command and capture the output
     result = subprocess.run(command, capture_output=True, text=True)
-    try:
-        os.remove(temporal_file_name)
-    except:
-        print(alt_accession)
-        print(combined_itr)
-        print(sequence)
-        os.remove(temporal_file_name)
 
 
     # Read the output file from the 'palindrome' program
@@ -849,6 +838,13 @@ def run_palindrome(accession1, mistakes, sequence):
                         similar_tuples.append(tuple_to)
 
     os.remove(temporal_palindrome_name)
+    try:
+        os.remove(temporal_file_name)
+    except:
+        print(alt_accession)
+        print(combined_itr)
+        print(sequence)
+        os.remove(temporal_file_name)
     
     keys_to_remove = []
 
