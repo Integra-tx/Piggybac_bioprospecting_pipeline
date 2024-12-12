@@ -732,11 +732,11 @@ def run_palindrome(accession1, mistakes, sequence):
     combined_length = len(sequence[:150]) + len(sequence[len(sequence) - 200:])
 
     # Generate input file for the 'palindrome' program
-    temporal_file_name = f'Temporal_palindrome_{alt_accession}.txt'
+    temporal_file_name = f'Temporal_palindrome_{accession1}.txt'
     with open(temporal_file_name, "w") as temporal:
         temporal.write(">" + accession1 + "\n" + combined_itr)
 
-    temporal_palindrome_name = f'Palindrome_result_{alt_accession}.txt'
+    temporal_palindrome_name = f'Palindrome_result_{accession1}.txt'
     # Run the 'palindrome' program
     command = ['palindrome', '-sequence', temporal_file_name, '-minpallen', '10', '-maxpallen', '100', '-gaplimit',
                str(combined_length), '-nummismatches', str(mistakes), '-outfile', temporal_palindrome_name, '-overlap',
@@ -841,7 +841,7 @@ def run_palindrome(accession1, mistakes, sequence):
     try:
         os.remove(temporal_file_name)
     except:
-        print(alt_accession)
+        print(accession1)
         print(combined_itr)
         print(sequence)
         os.remove(temporal_file_name)
