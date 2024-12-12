@@ -200,10 +200,13 @@ def main():
 
 
             cluster_ray = [] 
+            name_files = set()
             for file_name in newlist:
                 for seq_id, sequence in file_name.items():
-                    cluster_ray.append(run_palindrome.remote(seq_id, mistake, sequence))       
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == seq_id, "Transposon"] = sequence
+                    if seq_id not in name_files:
+                        name_files.add(seq_id)
+                        cluster_ray.append(run_palindrome.remote(seq_id, mistake, sequence))       
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == seq_id, "Transposon"] = sequence
             newlist = ray.get(cluster_ray)
 
             for sg_pal_dict in newlist:
