@@ -856,7 +856,7 @@ def run_palindrome(accession1, mistakes, sequence):
 
         for key in keys_to_remove:
             del itr_dictionary[key]
-        itr_results = sg_and_palindromes(itr_dictionary, alt_accession, sequence)
+        itr_results = sg_and_palindromes(itr_dictionary, accession1, sequence)
         return itr_results
     else:
         return None
