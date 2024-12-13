@@ -351,9 +351,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                         count += 1
                         for ids in identity_list:
                             if record.id == ids.split("|")[1]:
-                                ids = ids.strip()
-                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','') + '_' + str(count) + '\n'
-                                print(formatted_id)
+                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
                                 trad.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
@@ -1024,7 +1022,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
                 short_consensus = line.split(' ')[0]
             if consensus_count == count_of_lines:
                 consensus_count = 0
-                consensus_seq = consensus_seq + line[61:].replace('\n', '')
+                consensus_seq = consensus_seq + line[91:].replace('\n', '')
             else:
                 if '_' in line:
                     consensus_count += 1
@@ -1111,7 +1109,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
     fifty_count = 0
     end_check = True
 
-    last_ten_characters = deque(maxlen=61)
+    last_ten_characters = deque(maxlen=91)
 
     for position, value in alignment_df_pivoted['Consensus_Seq'].items():
         if begin_check:
