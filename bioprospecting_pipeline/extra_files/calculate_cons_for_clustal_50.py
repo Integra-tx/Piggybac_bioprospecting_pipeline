@@ -483,7 +483,7 @@ def calculate_cons_for_clustal_protein(
                 # After line with last_identifier written to new file, add the
                 # next chunk of conservation to insert conservation indicator
                 # lines into MSA in output.
-                seq_index = 61
+                seq_index = 91
                 output_file.write(line.strip()+"\n")
                 output_file.write((" "* seq_index)+next(chunk)+"\n")
 
