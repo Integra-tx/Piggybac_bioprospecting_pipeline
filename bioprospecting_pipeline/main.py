@@ -210,7 +210,7 @@ def main():
             newlist = ray.get(cluster_ray)
 
             for sg_pal_dict in newlist:
-                if sg_pal_dict['Accession']:
+                if sg_pal_dict:
                     accession_name = sg_pal_dict['Accession']
                     if 'TTAA' in sg_pal_dict:
                         ttaa_result = sg_pal_dict['TTAA'] 
