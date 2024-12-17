@@ -1256,7 +1256,7 @@ def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
     "--maxiterate", "2",       # Perform 2 iterative refinement cycles
     "--retree", "1",           # Reconstruct the guide tree only once
     "--genafpair",             # Use global alignment with generalized affine gap costs
-    "--namelength", "60",
+    "--namelength", "90",
     mafft_in                   # Input file
     ]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
