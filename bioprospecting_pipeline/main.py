@@ -210,19 +210,20 @@ def main():
             newlist = ray.get(cluster_ray)
 
             for sg_pal_dict in newlist:
-                accession_name = sg_pal_dict['Accession']
-                if 'TTAA' in sg_pal_dict:
-                    ttaa_result = sg_pal_dict['TTAA'] 
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "ttaa"] = ttaa_result
-                if 'SG' in sg_pal_dict:
-                    sg_result = sg_pal_dict['SG']
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "SG"] = sg_result
-                if 'ITRs' in sg_pal_dict:
-                    itr_result = sg_pal_dict['ITRs']
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "N_palindromes"] = itr_result
-                if 'Seq_itr' in sg_pal_dict:
-                    itr_seq = sg_pal_dict['Seq_itr']
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "palindromes"] = itr_seq                
+                if sg_pal_dict['Accession']:
+                    accession_name = sg_pal_dict['Accession']
+                    if 'TTAA' in sg_pal_dict:
+                        ttaa_result = sg_pal_dict['TTAA'] 
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "ttaa"] = ttaa_result
+                    if 'SG' in sg_pal_dict:
+                        sg_result = sg_pal_dict['SG']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "SG"] = sg_result
+                    if 'ITRs' in sg_pal_dict:
+                        itr_result = sg_pal_dict['ITRs']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "N_palindromes"] = itr_result
+                    if 'Seq_itr' in sg_pal_dict:
+                        itr_seq = sg_pal_dict['Seq_itr']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "palindromes"] = itr_seq                
                 #os.remove(file_name)
             final_pre_clustering_dataframe.to_csv(f'{output}/Bioprospecting_results.csv')  
             sys.stderr.write('Finished transposon boundary refining\n')
