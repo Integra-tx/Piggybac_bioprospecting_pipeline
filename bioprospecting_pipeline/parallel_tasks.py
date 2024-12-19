@@ -380,7 +380,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
         
         min_orf_length=300
         try:
-            os.path.isfile(fname)
+            os.path.isfile(dna_filename)
             pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
             os.remove(dna_filename)
             return pre_cluster_dataframe
