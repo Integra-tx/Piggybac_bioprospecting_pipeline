@@ -314,7 +314,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                         
                 else:
                     for extra_path in x:
-                        print(extra_path)
                         if genome_name in extra_path:
                         
                             final_path = str(extra_path)
