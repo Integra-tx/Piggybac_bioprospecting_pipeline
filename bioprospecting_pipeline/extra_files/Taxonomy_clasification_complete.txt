@@ -5941,3 +5941,6 @@ Lithobius_forficatus,Non insect arthropod
 Sycon_ciliatum,Sea sponge
 Agonopterix_alstromeriana,Insect
 Phytophthora_formosa,Fungus like eukaryote
+Spialia_geron,Insect
+Pterapherapteryx_sexalata,Insect
+Muschampia_poggei,Insect
