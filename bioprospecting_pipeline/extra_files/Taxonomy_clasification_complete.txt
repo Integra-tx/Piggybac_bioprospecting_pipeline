@@ -5945,3 +5945,4 @@ Spialia_geron,Insect
 Pterapherapteryx_sexalata,Insect
 Muschampia_poggei,Insect
 Melanis_pixe,Insect
+Parotocinclus_spilosoma,Fish
