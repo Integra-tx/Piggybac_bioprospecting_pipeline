@@ -321,7 +321,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
         if not final_path:
             raise ValueError(f"Genome path not found for {genome_name}")
 
-        dna_filename = f'{name}_extended_dna.fa'
+        dna_filename = f'{name.replace(".out","")}_extended_dna.fa'
 
 
 
