@@ -279,11 +279,16 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
             if ">>" in line:
                 if location and species_name and begin != "?":
                     identity_list.append(f">{species_name}|{location}|{begin}-{end}|({positive})\n")
-
-                if "TPA " in line or 'MAG:' in line:
+                    
+                if "MAG TPA_asm:" in line:
+                    location, species_name = line.split(" ")[1], "_".join(line.split(" ")[5:7])
+                    species_name = species_name.replace('[','').replace(']','')
+                elif "TPA_" in line or 'MAG:' in line:
                     location, species_name = line.split(" ")[1], "_".join(line.split(" ")[4:6])
+                    species_name = species_name.replace('[','').replace(']','')
                 else:
                     location, species_name = line.split(" ")[1], "_".join(line.split(" ")[3:5])
+                    species_name = species_name.replace('[','').replace(']','')
                 complete_string = ""
 
             if "!" in line:
