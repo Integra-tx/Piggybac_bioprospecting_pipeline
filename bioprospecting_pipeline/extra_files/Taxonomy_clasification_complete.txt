@@ -5936,3 +5936,8 @@ Hyperactive_piggybac,Insect
 Piggybat,Mammalian
 PLE-wu,Insect
 Oryzias_latipes_chr,Fish
+Lithobates_septentrionalis,Amphibian
+Lithobius_forficatus,Non insect arthropod
+Sycon_ciliatum,Sea sponge
+Agonopterix_alstromeriana,Insect
+Phytophthora_formosa,Fungus like eukaryote
