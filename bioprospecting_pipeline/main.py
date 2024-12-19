@@ -95,13 +95,20 @@ def main():
                         batch_write(file_list, extension, output, chunk, input_path, 1, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db)
                     sys.stderr.write('BATH Finished\n')
 
-                    #pd.concat([df, pd.DataFrame(orfs)], ignore_index=True)
-                    # Check if file list is a single document and save this as the unique genome path
-                    if len(file_list) == 1 and os.path.isfile(input_path + '/' + file_list[0]):
-                        genome_paths = input_path + '/' + file_list[0]
-                    else:
-                        # Parallelize the retrieval of all the genome paths and save them in a list
-                        genome_paths = parallel_paths(file_list, 'genome', input_path, output)
+                if len(file_list) == 1 and os.path.isfile(input_path + '/' + file_list[0]):
+                    genome_paths = input_path + '/' + file_list[0]
+                else:
+                    # Parallelize the retrieval of all the genome paths and save them in a list
+                    genome_paths = parallel_paths(file_list, 'genome', input_path, output)
+
+                # Run DNA extraction
+                sys.stderr.write('Starting DNA extraction\n')                
+
+                # Sort and process genome reader
+                
+                frahmmer_list = [x for x in os.listdir(f"{output}/Frahmmer_results")]
+                batch_list = batch_par(frahmmer_list)
+                dataframe_pre_clustering = []
 
                 # Run DNA extraction
                 sys.stderr.write('Starting DNA extraction\n')                
