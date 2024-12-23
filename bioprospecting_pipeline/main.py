@@ -4,7 +4,7 @@ import ray
 import shutil
 import time
 import pandas as pd
-from parallel_tasks import run_frehmmr, extract_dna, write_fasta_from_dataframe, batch_par, batch_write, run_palindrome, flatten_deep, sequence_cutting, parallel_paths
+from parallel_tasks import run_frehmmr, extract_dna, write_fasta_from_dataframe, batch_par, batch_write, run_palindrome, flatten_deep, sequence_cutting, parallel_paths, split_and_distribute
 import yaml
 
 def load_config():
@@ -197,9 +197,17 @@ def main():
 
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
-                    cluster_ray.append(sequence_cutting.remote(members,final_pre_clustering_dataframe,centroid, cons_file))
-                    for unique_members in members:
-                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                    if len(members) < 20:
+                        cluster_ray.append(sequence_cutting.remote(members,final_pre_clustering_dataframe,centroid, cons_file))
+                        for unique_members in members:
+                            final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                    else:
+                        split_members = split_and_distribute(members)
+                        for chunk in split_members:
+                            cluster_ray.append(sequence_cutting.remote(chunk,final_pre_clustering_dataframe,centroid, cons_file))
+                            for unique_members in chunk:
+                                final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                            
                 else:
                     final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
 
