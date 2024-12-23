@@ -1259,7 +1259,8 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
 
 @ray.remote(num_cpus=2)
 def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
-    file_name_for_msa = f'{centroid}_temporal.fasta'
+    alt_centroid = name_list[0]
+    file_name_for_msa = f'{alt_centroid}_temporal.fasta'
     with open(file_name_for_msa,'w') as temp_file:
         for sequence_names in name_list:
             matching_row = complete_sequence_dict.loc[complete_sequence_dict['Accession'] == sequence_names.strip()]
@@ -1267,7 +1268,7 @@ def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
             temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
     count_of_lines = len(name_list)
     mafft_in = file_name_for_msa
-    mafft_out = f'{centroid}_matches_number.aln'
+    mafft_out = f'{alt_centroid}_matches_number.aln'
 
     command = [
     "einsi",                   # The executable (einsi)
@@ -1289,8 +1290,8 @@ def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
     
     with open(mafft_out, "w") as handle:
         handle.write(stdout)
-    numbering_result = sequence_numbering(centroid, count_of_lines, mafft_out)
-    cut_sequence = sequence_cuter(count_of_lines, centroid, numbering_result,cons_file)
+    numbering_result = sequence_numbering(alt_centroid, count_of_lines, mafft_out)
+    cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
     os.remove(mafft_out)
     return cut_sequence
 
