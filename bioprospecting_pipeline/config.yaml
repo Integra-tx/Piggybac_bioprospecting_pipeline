@@ -37,3 +37,5 @@ taxonomy_file: "./extra_files/Taxonomy_clasification_complete.txt" #Taxonomy ref
 
 colculate_cons: "./extra_files/calculate_cons_for_clustal_50.py" #Cons script
 
+frahmmer_path: "./results/Complete_dde_sequences.fasta" #Cons script 
+
