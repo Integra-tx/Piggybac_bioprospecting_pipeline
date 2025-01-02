@@ -110,9 +110,7 @@ def main():
                 frahmmer_list = [x for x in os.listdir(f"{output}/Frahmmer_results")]
                 batch_list = batch_par(frahmmer_list)
                 dataframe_pre_clustering = []
-
-                # Run DNA extraction
-                sys.stderr.write('Starting DNA extraction\n')                
+              
 
                 # Sort and process genome reader
                 
