@@ -32,6 +32,7 @@ def main():
     cons_file = config['colculate_cons']
     blast_path = config['blast_path']
     blast_db = config['blast_db']
+    frahmmer_aa_path = config['frahmmer_path']
     
 
     # Start counting the execution time of the pipeline
