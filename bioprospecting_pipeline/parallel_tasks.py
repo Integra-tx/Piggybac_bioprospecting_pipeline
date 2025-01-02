@@ -322,17 +322,12 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
             for x in genome_paths:
                 if len(x) == 1:
                     if genome_name in x[0]:
-                        final_path = str(x[0])
-                        
+                        final_path = str(x[0])        
                 else:
                     for extra_path in x:
-                        try:
-                            if genome_name in extra_path:
-                                final_path = str(extra_path)
-                        except:
-                            print(in_path)
-                            if genome_name in extra_path:
-                                final_path = str(extra_path)
+                        if genome_name in extra_path:
+                            final_path = str(extra_path)
+
         else:
             final_path = genome_paths
             extension_dfam = True
