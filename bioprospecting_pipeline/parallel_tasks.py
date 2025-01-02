@@ -1260,7 +1260,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
 
 @ray.remote(num_cpus=2)
 def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
-    alt_centroid = name_list[0]
+    alt_centroid = name_list[0].strip().replace("$")
     print(alt_centroid)
     file_name_for_msa = f'{alt_centroid}_temporal.fasta'
     with open(file_name_for_msa,'w') as temp_file:
