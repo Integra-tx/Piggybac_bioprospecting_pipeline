@@ -6,7 +6,7 @@ input_path: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/
 output_path: "./results"                  # Path to save the output files
 
 # Pipeline steps
-pipeline_step: 3                         # Pipeline step to run (1, 2, 3, 4, or 5)
+pipeline_step: 4                         # Pipeline step to run (1, 2, 3, 4, or 5)
 
 # Frahmmer settings
 seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
