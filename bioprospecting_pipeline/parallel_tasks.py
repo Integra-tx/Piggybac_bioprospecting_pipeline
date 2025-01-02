@@ -279,12 +279,14 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
         raise FileNotFoundError(f"Frahmmer output file not found: {out_in}")
 
 
+    print(in_path)
     with open(in_path, "r") as name_search:
         for line in name_search:
             line = line.strip()
 
             if 'target sequence database:' in line:
                 genome_name = line.split('/')[-1]
+                print(genome_name)
                 genome_name = genome_name.split('_')[0] + '_' + genome_name.split('_')[
                     1] if 'data_genomes' not in line else genome_name
 
