@@ -285,6 +285,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
 
             if 'target sequence database:' in line:
                 genome_name = line.split('/')[-1]
+                print(genome_name)
                 genome_name = genome_name.split('_')[0] + '_' + genome_name.split('_')[
                     1] if 'data_genomes' not in line else genome_name
 
