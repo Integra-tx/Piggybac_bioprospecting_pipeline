@@ -7,6 +7,7 @@ import pandas as pd
 from parallel_tasks import run_frehmmr, extract_dna, write_fasta_from_dataframe, batch_par, batch_write, run_palindrome, flatten_deep, sequence_cutting, parallel_paths, split_and_distribute
 import yaml
 
+
 def load_config():
     with open('config.yaml', 'r') as config_file:
         return yaml.safe_load(config_file)
