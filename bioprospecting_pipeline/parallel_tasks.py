@@ -85,7 +85,7 @@ def run_frehmmr(my_file, out, path, seed, orf_length):
     else:
         logging.info('No genome for ' + name)
 
-def split_and_distribute(lst, chunk_size=10):
+def split_and_distribute(lst, chunk_size=20):
     # Split the list into chunks of size `chunk_size`
     chunks = [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
     
