@@ -190,7 +190,7 @@ def main():
 
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
-                    if len(members) < 20:
+                    if len(members) < 40:
                         cluster_ray.append(sequence_cutting.remote(members,final_pre_clustering_dataframe,centroid, cons_file))
                         for unique_members in members:
                             final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
