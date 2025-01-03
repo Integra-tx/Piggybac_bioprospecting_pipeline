@@ -187,25 +187,38 @@ def main():
                     past_centroid = centroid
                 
             
-            cluster_ray = []
+            cluster_ray = []  # List to hold remote tasks
             sequence_dict_reduced = final_pre_clustering_dataframe.set_index('Accession')['Full_dna'].to_dict()
+
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
                     if len(members) < 40:
-                        cluster_ray.append(sequence_cutting.remote(members,sequence_dict_reduced,centroid, cons_file))
+                        cluster_ray.append(sequence_cutting.remote(members, sequence_dict_reduced, centroid, cons_file))
                         for unique_members in members:
-                            final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                            final_pre_clustering_dataframe.loc[
+                                final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                     else:
                         split_members = split_and_distribute(members)
                         for chunk in split_members:
-                            cluster_ray.append(sequence_cutting.remote(chunk,sequence_dict_reduced,centroid, cons_file))
+                            cluster_ray.append(sequence_cutting.remote(chunk, sequence_dict_reduced, centroid, cons_file))
                             for unique_members in chunk:
-                                final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
-                            
+                                final_pre_clustering_dataframe.loc[
+                                    final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                 else:
-                    final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
+                    final_pre_clustering_dataframe.loc[
+                        final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
 
-            newlist = ray.get(cluster_ray)
+            # Process tasks in batches
+            batch_size = 30  # Adjust based on memory constraints
+            task_batches = [
+                cluster_ray[i:i + batch_size]
+                for i in range(0, len(cluster_ray), batch_size)
+            ]
+
+            newlist = []  # To store results
+            for batch in task_batches:
+                batch_results = ray.get(batch)  # Retrieve results for the current batch
+                newlist.extend(batch_results)  # Append results to the final list
 
 
             cluster_ray = [] 
