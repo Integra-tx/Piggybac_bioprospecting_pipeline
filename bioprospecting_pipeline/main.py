@@ -187,7 +187,7 @@ def main():
                 
             
             cluster_ray = []
-            sequence_dict_reduced = complete_sequence_dict.set_index('Accession')['Full_dna'].to_dict()
+            sequence_dict_reduced = final_pre_clustering_dataframe.set_index('Accession')['Full_dna'].to_dict()
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
                     if len(members) < 40:
