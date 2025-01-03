@@ -187,17 +187,17 @@ def main():
                 
             
             cluster_ray = []
-
+            sequence_dict_reduced = complete_sequence_dict.set_index('Accession')['Full_dna'].to_dict()
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
                     if len(members) < 40:
-                        cluster_ray.append(sequence_cutting.remote(members,final_pre_clustering_dataframe,centroid, cons_file))
+                        cluster_ray.append(sequence_cutting.remote(members,sequence_dict_reduced,centroid, cons_file))
                         for unique_members in members:
                             final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                     else:
                         split_members = split_and_distribute(members)
                         for chunk in split_members:
-                            cluster_ray.append(sequence_cutting.remote(chunk,final_pre_clustering_dataframe,centroid, cons_file))
+                            cluster_ray.append(sequence_cutting.remote(chunk,sequence_dict_reduced,centroid, cons_file))
                             for unique_members in chunk:
                                 final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                             
