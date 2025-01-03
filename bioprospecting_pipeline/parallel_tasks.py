@@ -1265,8 +1265,7 @@ def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
     file_name_for_msa = f'{alt_centroid}_temporal.fasta'
     with open(file_name_for_msa,'w') as temp_file:
         for sequence_names in name_list:
-            matching_row = complete_sequence_dict.loc[complete_sequence_dict['Accession'] == sequence_names.strip()]
-            full_dna_value = matching_row['Full_dna'].values[0]
+            full_dna_value = complete_sequence_dict[sequence_name.strip()]
             temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
     count_of_lines = len(name_list)
     mafft_in = file_name_for_msa
