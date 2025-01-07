@@ -219,6 +219,7 @@ def main():
             for batch in task_batches:
                 batch_results = ray.get(batch)  # Retrieve results for the current batch
                 newlist.extend(batch_results)  # Append results to the final list
+                ray.internal.free(batch)
 
 
             cluster_ray = [] 
