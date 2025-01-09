@@ -215,10 +215,21 @@ def main():
                 for i in range(0, len(cluster_ray), batch_size)
             ]
 
+            tmp_base_path = "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/tmp"
+
             newlist = []  # To store results
             for batch in task_batches:
                 batch_results = ray.get(batch)  # Retrieve results for the current batch
                 newlist.extend(batch_results)  # Append results to the final list
+                # List all subdirectories
+                subdirs = [os.path.join(tmp_base_path, d) for d in os.listdir(tmp_base_path) if os.path.isdir(os.path.join(tmp_base_path, d))]
+                for subdir in subdirs:
+                    try:
+                        shutil.rmtree(subdir)  # Recursively delete the subdirectory
+                        print(f"Deleted temporary directory: {subdir}")
+                    except Exception as e:
+                        print(f"Failed to delete {subdir}: {e}")
+
                 ray.internal.free(batch)
 
 
