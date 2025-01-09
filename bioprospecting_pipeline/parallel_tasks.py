@@ -1054,12 +1054,13 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
     with open(mafft_out, 'r') as alignment:
         clustal_alignment = alignment.read()
 
-
+    os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
+    os.remove(mafft_out)
     # Process the Clustal alignment using regular expressions
     pattern = re.compile(r'([A-Za-z]\S+)\s+([A-Za-z-]+)\s+(\d+)')
     matches = re.findall(pattern, clustal_alignment)
     matches = [match for match in matches if "alignment" not in match[1]]
-
+    del clustal_alignment  # Cleanup
     # Create a DataFrame
     alignment_data = {'Accession': [], 'Alignment_Position': [], 'Sequence_position': []}
 
@@ -1114,12 +1115,13 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
     alignment_df_pivoted = alignment_df.pivot_table(index='Alignment_Position', columns='Accession',
                                                     values=['Sequence_position'],
                                                     aggfunc={'Sequence_position': 'first'})
-
+    del alignment_df  # Cleanup
     # Create a DataFrame for consensus_seq
     consensus_chars = list(consensus_seq)
 
     # Add the extended consensus_seq as a new column in alignment_df
     alignment_df_pivoted['Consensus_Seq'] = consensus_chars
+    del consensus_seq  # Cleanup
 
 
     start_positions = []
@@ -1208,7 +1210,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
 
     # Create a new dictionary to store the shortened sequences
     shortened_sequences = {}
-
+    os.remove(fasta_file_path)
     accession_list = []
     # Extract the relevant part of each sequence
     for seq_id, full_sequence in sequence_dict.items():
@@ -1253,10 +1255,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
         shortened_sequences[f'{sequence_id}'] = shortened_sequence
 
 
-
-    os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
-    os.remove(mafft_out)
-    os.remove(fasta_file_path)
+    del alignment_df_pivoted
     return shortened_sequences
 
 @ray.remote(num_cpus=2)
