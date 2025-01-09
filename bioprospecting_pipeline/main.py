@@ -209,7 +209,7 @@ def main():
                         final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
 
             # Process tasks in batches
-            batch_size = 10  # Adjust based on memory constraints
+            batch_size = 5  # Adjust based on memory constraints
             task_batches = [
                 cluster_ray[i:i + batch_size]
                 for i in range(0, len(cluster_ray), batch_size)
