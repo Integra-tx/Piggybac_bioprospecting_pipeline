@@ -754,7 +754,7 @@ def run_palindrome(accession1, mistakes, sequence):
     combined_length = len(sequence[:150]) + len(sequence[len(sequence) - 200:])
 
     # Generate input file for the 'palindrome' program
-    temporal_file_name = f'Temporal_palindrome_{accession1}.txt'
+    temporal_file_name = f'Temporal_palindrome_{accession1}.fasta'
     with open(temporal_file_name, "w") as temporal:
         temporal.write(">" + accession1 + "\n" + combined_itr)
 
