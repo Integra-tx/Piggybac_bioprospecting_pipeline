@@ -15,6 +15,7 @@ from collections import deque
 import subprocess
 import collections
 import math
+import gc
 
 
 
@@ -1259,15 +1260,7 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
     return shortened_sequences
 
 @ray.remote(num_cpus=2)
-def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
-    alt_centroid = name_list[0].strip().replace("$","").replace("'","")
-    print(alt_centroid)
-    file_name_for_msa = f'{alt_centroid}_temporal.fasta'
-    with open(file_name_for_msa,'w') as temp_file:
-        for sequence_names in name_list:
-            full_dna_value = complete_sequence_dict[sequence_names.strip()]
-            temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
-    count_of_lines = len(name_list)
+def sequence_cutting(file_name_for_msa,centroid,cons_file,count_of_lines,alt_centroid):
     mafft_in = file_name_for_msa
     mafft_out = f'{alt_centroid}_matches_number.aln'
 
