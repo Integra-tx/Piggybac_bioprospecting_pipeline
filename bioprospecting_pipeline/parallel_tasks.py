@@ -1287,7 +1287,7 @@ def sequence_cutting(file_name_for_msa,centroid,cons_file,count_of_lines,alt_cen
     numbering_result = sequence_numbering(alt_centroid, count_of_lines, mafft_out)
     os.remove(mafft_out)
     cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
-
+    gc.collect()
     return cut_sequence
 
 
