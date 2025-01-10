@@ -201,7 +201,7 @@ def main():
                         for sequence_names in members:
                           full_dna_value = complete_sequence_dict[sequence_names.strip()]
                           temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
-                      count_of_lines = len(name_list)
+                      count_of_lines = len(members)
                       cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines, alt_centroid))
                       for unique_members in members:
                         final_pre_clustering_dataframe.loc[
