@@ -1275,15 +1275,16 @@ def sequence_cutting(file_name_for_msa,centroid,cons_file,count_of_lines,alt_cen
     "--namelength", "90",
     mafft_in                   # Input file
     ]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # Get the output and error messages
-    stdout, stderr = process.communicate()
-    # Decode stdout from bytes to string
-    stdout = stdout.decode()  # Decode bytes to string
-    stderr = stderr.decode()  # Decode stderr from bytes to string (if needed)
+
+    try:
+      with open(mafft_out, "w") as handle:
+        process = subprocess.Popen(command, stdout=handle, stderr=subprocess.DEVNULL)
+      process.wait()
     
-    with open(mafft_out, "w") as handle:
-        handle.write(stdout)
+    except Exception as e:
+        print(f"Error running MAFFT: {e}")
+        raise
+	    
     numbering_result = sequence_numbering(alt_centroid, count_of_lines, mafft_out)
     os.remove(mafft_out)
     cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
