@@ -758,7 +758,9 @@ def run_palindrome(accession1, mistakes, sequence):
     with open(temporal_file_name, "w") as temporal:
         temporal.write(">" + accession1 + "\n" + combined_itr)
 
+
     temporal_palindrome_name = f'Palindrome_result_{accession1}.txt'
+    temporal_palindrome_name = temporal_palindrome_name.strip().replace("$","").replace("'","")
     # Run the 'palindrome' program
     command = ['palindrome', '-sequence', temporal_file_name, '-minpallen', '10', '-maxpallen', '100', '-gaplimit',
                str(combined_length), '-nummismatches', str(mistakes), '-outfile', temporal_palindrome_name, '-overlap',
