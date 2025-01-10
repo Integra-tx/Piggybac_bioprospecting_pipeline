@@ -6,6 +6,7 @@ import time
 import pandas as pd
 from parallel_tasks import run_frehmmr, extract_dna, write_fasta_from_dataframe, batch_par, batch_write, run_palindrome, flatten_deep, sequence_cutting, parallel_paths, split_and_distribute
 import yaml
+import gc
 
 
 def load_config():
@@ -231,6 +232,10 @@ def main():
                         print(f"Failed to delete {subdir}: {e}")
 
                 ray.internal.free(batch)
+                # Clean up batch memory
+                del batch_results
+                del batch
+                gc.collect()
 
 
             cluster_ray = [] 
