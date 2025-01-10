@@ -194,17 +194,32 @@ def main():
             for centroid, members in clustered_sequences_dict.items():
                 if len(members) > 1:
                     if len(members) < 40:
-                        cluster_ray.append(sequence_cutting.remote(members, sequence_dict_reduced, centroid, cons_file))
-                        for unique_members in members:
-                            final_pre_clustering_dataframe.loc[
-                                final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                      alt_centroid = members[0].strip().replace("$","").replace("'","")
+                      print(alt_centroid)
+                      file_name_for_msa = f'{alt_centroid}_temporal.fasta'
+                      with open(file_name_for_msa,'w') as temp_file:
+                        for sequence_names in members:
+                          full_dna_value = complete_sequence_dict[sequence_names.strip()]
+                          temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
+                      count_of_lines = len(name_list)
+                      cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines, alt_centroid))
+                      for unique_members in members:
+                        final_pre_clustering_dataframe.loc[
+                        final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                     else:
                         split_members = split_and_distribute(members)
                         for chunk in split_members:
-                            cluster_ray.append(sequence_cutting.remote(chunk, sequence_dict_reduced, centroid, cons_file))
-                            for unique_members in chunk:
-                                final_pre_clustering_dataframe.loc[
-                                    final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
+                          alt_centroid = chunk[0].strip().replace("$","").replace("'","")
+                          print(alt_centroid)
+                          file_name_for_msa = f'{alt_centroid}_temporal.fasta'
+                          with open(file_name_for_msa,'w') as temp_file:
+                            for sequence_names in chunk:
+                              full_dna_value = complete_sequence_dict[sequence_names.strip()]
+                              temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
+                          count_of_lines = len(chunk)
+                          cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines))
+                          for unique_members in chunk:
+                            final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                 else:
                     final_pre_clustering_dataframe.loc[
                         final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
