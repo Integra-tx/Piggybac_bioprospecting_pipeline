@@ -1292,8 +1292,9 @@ def sequence_cutting(name_list, complete_sequence_dict,centroid,cons_file):
     with open(mafft_out, "w") as handle:
         handle.write(stdout)
     numbering_result = sequence_numbering(alt_centroid, count_of_lines, mafft_out)
-    cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
     os.remove(mafft_out)
+    cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
+
     return cut_sequence
 
 
