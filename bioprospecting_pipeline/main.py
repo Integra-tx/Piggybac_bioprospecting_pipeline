@@ -167,7 +167,9 @@ def main():
                     else:
                         sequence_line = line.strip()
                         if accession not in complete_sequence_dict:
-                            complete_sequence_dict[accession] = sequence_line
+                          dna_sequence = final_pre_clustering_dataframe.loc[df['Accession'] == accession_to_find, 'Full_dna'].values
+                          complete_sequence_dict[accession] = dna_sequence
+
             centroid = None
             past_centroid = True
             first_pass = False
