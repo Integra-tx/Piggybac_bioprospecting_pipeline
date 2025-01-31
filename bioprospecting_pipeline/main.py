@@ -200,9 +200,12 @@ def main():
                       print(alt_centroid)
                       file_name_for_msa = f'{alt_centroid}_temporal.fasta'
                       with open(file_name_for_msa,'w') as temp_file:
-                        for sequence_names in members:
-                          full_dna_value = complete_sequence_dict[sequence_names.strip()]
-                          temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
+                        for sequence_name in members:
+                            print(sequence_name)
+                            accession_sequence = sequence_name[0]
+                            print(accession_sequence)
+                            full_dna_value = complete_sequence_dict[accession_sequence.strip()]
+                            temp_file.write('>' + accession_sequence.strip() + '\n' + full_dna_value + '\n')
                       count_of_lines = len(members)
                       cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines, alt_centroid))
                       for unique_members in members:
