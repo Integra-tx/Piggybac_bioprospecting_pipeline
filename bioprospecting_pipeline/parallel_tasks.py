@@ -1239,7 +1239,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             final_position_dict[seq_id] = (start_value, end_value)
 
         shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
-	del alignment_df_pivoted
+        del alignment_df_pivoted
 
         return shortened_sequences
 
