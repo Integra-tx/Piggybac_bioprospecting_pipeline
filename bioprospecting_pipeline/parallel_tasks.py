@@ -1207,6 +1207,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         consensus_seq = extract_consensus_sequence(mafft_out, count_of_lines)
         
         #Clean up files
+        name_alt = "_plusCONS.aln"
         os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
         os.remove(mafft_out)
 
