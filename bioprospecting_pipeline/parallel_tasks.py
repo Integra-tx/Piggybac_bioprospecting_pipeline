@@ -1030,119 +1030,116 @@ def sequence_numbering(centroid, number_of_sequences, input_name):
                 check = 1
     return output_name
 
-def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
-    consensus_count = 0
-    consensus_seq = ''
-
+def run_consensus_script(cons_file, mafft_out, name):
+    """Run the consensus script and handle errors."""
     try:
         os.system(f"python3 {cons_file} {mafft_out}")
+    except Exception as e:
+        print(f"Error running consensus script for {name}: {e}")
+        raise
 
-    except:
-        print(f'Problem consenus in {name}')
 
-    name_alt = f"_plusCONS.aln"
+def extract_consensus_sequence(mafft_out, count_of_lines):
+    """Extract the consensus sequence from the alignment file."""
+    consensus_seq = ''
+    consensus_count = 0
+    name_alt = "_plusCONS.aln"
+    cons_file_path = f"{mafft_out.replace('.aln', '')}{name_alt}"
 
-    with open(f"{mafft_out.replace('.aln','')}{name_alt}", 'r') as alignment:
-        for line in alignment:
-            if consensus_count == count_of_lines - 1:
-                short_consensus = line.split(' ')[0]
-            if consensus_count == count_of_lines:
-                consensus_count = 0
-                consensus_seq = consensus_seq + line[91:].replace('\n', '')
-            else:
-                if '_' in line:
+    try:
+        with open(cons_file_path, 'r') as alignment:
+            for line in alignment:
+                if consensus_count == count_of_lines - 1:
+                    short_consensus = line.split(' ')[0]
+                if consensus_count == count_of_lines:
+                    consensus_count = 0
+                    consensus_seq += line[91:].replace('\n', '')
+                elif '_' in line:
                     consensus_count += 1
+    except FileNotFoundError:
+        print(f"Consensus file not found: {cons_file_path}")
+        raise
+    except Exception as e:
+        print(f"Error reading consensus file: {e}")
+        raise
+
+    return consensus_seq
 
 
-    with open(mafft_out, 'r') as alignment:
-        clustal_alignment = alignment.read()
+def process_alignment_file(mafft_out):
+    """Process the alignment file and extract sequence data."""
+    try:
+        with open(mafft_out, 'r') as alignment:
+            clustal_alignment = alignment.read()
+    except FileNotFoundError:
+        print(f"Alignment file not found: {mafft_out}")
+        raise
+    except Exception as e:
+        print(f"Error reading alignment file: {e}")
+        raise
 
-    os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
-    os.remove(mafft_out)
-    # Process the Clustal alignment using regular expressions
+    # Extract matches using regex
     pattern = re.compile(r'([A-Za-z]\S+)\s+([A-Za-z-]+)\s+(\d+)')
-    matches = re.findall(pattern, clustal_alignment)
-    matches = [match for match in matches if "alignment" not in match[1]]
+    matches = [match for match in re.findall(pattern, clustal_alignment) if "alignment" not in match[1]]
     del clustal_alignment  # Cleanup
-    # Create a DataFrame
-    alignment_data = {'Accession': [], 'Alignment_Position': [], 'Sequence_position': []}
 
+    return matches
+
+
+def create_alignment_dataframe(matches, count_of_lines):
+    """Create a DataFrame from the alignment matches."""
+    alignment_data = {'Accession': [], 'Alignment_Position': [], 'Sequence_position': []}
     triple_count = -1
     big_count = 0
     current_dict = {}
-
-    size_count = True
+    sequence_length = None
 
     for accession, sequence, position in matches:
-
         triple_count += 1
         if triple_count == count_of_lines:
             big_count += 1
             triple_count = 0
-        position_count = 0
+
+        if sequence_length is None:
+            sequence_length = len(sequence)
+
+        gap_count = sequence.count('-')
         alt_position_count = 0
 
-        if size_count:
-            sequence_length = len(sequence)
-            size_count = False
-        gap_count = int(str(sequence).count('-'))
-
         for pos, residue in enumerate(sequence):
-            position_count += 1
+            alignment_position = pos + 1 + (big_count * sequence_length)
             alignment_data['Accession'].append(accession)
-            alignment_data['Alignment_Position'].append(position_count + (big_count * sequence_length))
+            alignment_data['Alignment_Position'].append(alignment_position)
 
             if residue != '-':
                 alt_position_count += 1
-
-                current_position = int(position) + alt_position_count - (
-                        sequence_length - gap_count)
-
-                if accession in current_dict:
-                    if current_position - current_dict[accession] > 1:
-                        current_position = current_dict[accession] + 1
-
+                current_position = int(position) + alt_position_count - (sequence_length - gap_count)
+                if accession in current_dict and current_position - current_dict[accession] > 1:
+                    current_position = current_dict[accession] + 1
                 current_dict[accession] = current_position
-
                 alignment_data['Sequence_position'].append(current_position)
             else:
-                if accession in current_dict:
-                    gap_position = current_dict[accession]
-                    alignment_data['Sequence_position'].append(gap_position)
-                else:
-                    alignment_data['Sequence_position'].append(0)
+                alignment_data['Sequence_position'].append(current_dict.get(accession, 0))
 
-    alignment_df = pd.DataFrame(alignment_data)
-
-    # Pivot the DataFrame to have positions as rows and accessions as columns
-    alignment_df_pivoted = alignment_df.pivot_table(index='Alignment_Position', columns='Accession',
-                                                    values=['Sequence_position'],
-                                                    aggfunc={'Sequence_position': 'first'})
-    del alignment_df  # Cleanup
-    # Create a DataFrame for consensus_seq
-    consensus_chars = list(consensus_seq)
-
-    # Add the extended consensus_seq as a new column in alignment_df
-    alignment_df_pivoted['Consensus_Seq'] = consensus_chars
-    del consensus_seq  # Cleanup
+    return pd.DataFrame(alignment_data)
 
 
+def find_conserved_regions(alignment_df_pivoted):
+    """Identify conserved regions based on consensus sequence."""
     start_positions = []
     end_positions = []
     consecutive_count = 0
-
     begin_check = False
     extra_count = 0
     extra_count_check = False
     fifty_count = 0
     end_check = True
-
     last_ten_characters = deque(maxlen=91)
 
     for position, value in alignment_df_pivoted['Consensus_Seq'].items():
-        if begin_check:
-            if value != '+' and value != '.' and value != ':':
-                fifty_count += 1
+        if begin_check and value not in {'+', '.', ':'}:
+            fifty_count += 1
+
         if value == '*':
             consecutive_count += 1
             if not begin_check and consecutive_count >= 6:
@@ -1167,99 +1164,88 @@ def sequence_cuter(count_of_lines, name, mafft_out,cons_file):
                     count_in_first_ten = list(last_ten_characters)[:20].count('*')
                     if count_in_first_ten >= 17:
                         end_positions = [position]
-
         else:
-            if value != '+' and value != '.' and value != ':':
+            if value not in {'+', '.', ':'}:
                 consecutive_count = 0
                 last_ten_characters.append('-')
 
-        final_position = position
-        # Check if the last segment extends to the end of the alignment
+    final_position = position
     if consecutive_count >= 6:
         count_in_first_ten = list(last_ten_characters)[:30].count('*')
         if count_in_first_ten >= 25:
             end_positions = [final_position]
 
-    position_dict = {}
-    final_position_dict = {}
-
-    # Extract the sequence positions for each sequence at start positions
-    start_positions_sequence = alignment_df_pivoted.loc[start_positions, ('Sequence_position', slice(None))]
-    # Extract the sequence positions for each sequence at end positions
-    end_positions_sequence = alignment_df_pivoted.loc[end_positions, ('Sequence_position', slice(None))]
-
-    for seq_id, sequence_position_data in start_positions_sequence.iterrows():
-        # Extract the sequence positions for the current sequence
-        for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
-            position_dict[seq_id_alt] = position_value
-
-    for seq_id, sequence_position_data in end_positions_sequence.iterrows():
-        # Extract the sequence positions for the current sequence
-        for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
-            start_value = position_dict[seq_id_alt]
-            final_position_dict[seq_id_alt] = (start_value, position_value)
-
-    # Replace 'your_fasta_file.fasta' with the actual path to your FASTA file
+    return start_positions, end_positions
 
 
-    fasta_file_path = f'{name}_temporal.fasta'
-
-    # Create an empty dictionary to store sequences
-    sequence_dict = {}
-
-    # Iterate over sequences in the FASTA file
-    for record in SeqIO.parse(fasta_file_path, 'fasta'):
-        sequence_dict[record.id] = str(record.seq)
-
-    # Create a new dictionary to store the shortened sequences
+def extract_shortened_sequences(final_position_dict, sequence_dict):
+    """Extract shortened sequences based on start and end positions."""
     shortened_sequences = {}
-    os.remove(fasta_file_path)
-    accession_list = []
-    # Extract the relevant part of each sequence
-    for seq_id, full_sequence in sequence_dict.items():
-        accession_list.append(seq_id)
-
-    # Iterate over the identified start and end positions
-    for sequence_id, locations in final_position_dict.items():
-        start = locations[0]
-        end = locations[1]
+    for sequence_id, (start, end) in final_position_dict.items():
         name_check = sequence_id.strip()
-
         try:
             full_sequence = sequence_dict[name_check]
-        except:
-            print(name)
-        new_start = False
-        for i in range(15):
-            if start - i >= 0:
-                new_start = start - i
-            else:
-                break
-        if not new_start:
-            new_start = start
-        try:
-            start = int(new_start)
-        except:
-            if math.isnan(start):
-                print(name + str(start) + str(new_start))
-            start = int(new_start)
-        new_end = False
-        for i in range(15):
-            if end + i <= len(sequence_dict[name_check]):
-                new_end = end + i
-            else:
-                break
-        if not new_end:
-            new_end = end
-        end = int(new_end)
-        # shortened_sequence = full_sequence[start:end + 1]  # Adjust indices based on Python's zero-based indexing
-        shortened_sequence = full_sequence[slice(start, end + 1)]
-        # Update the dictionary with the shortened sequence
-        shortened_sequences[f'{sequence_id}'] = shortened_sequence
+            new_start = max(start - 15, 0) if start - 15 >= 0 else start
+            new_end = min(end + 15, len(full_sequence)) if end + 15 <= len(full_sequence) else end
+            shortened_sequence = full_sequence[new_start:new_end + 1]
+            shortened_sequences[sequence_id] = shortened_sequence
+        except KeyError:
+            print(f"Sequence ID {name_check} not found in sequence dictionary.")
+        except Exception as e:
+            print(f"Error processing sequence {name_check}: {e}")
 
-
-    del alignment_df_pivoted
     return shortened_sequences
+
+
+def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
+    """Main function to process sequences and extract conserved regions."""
+    try:
+        # Step 1: Run consensus script
+        run_consensus_script(cons_file, mafft_out, name)
+
+        # Step 2: Extract consensus sequence
+        consensus_seq = extract_consensus_sequence(mafft_out, count_of_lines)
+        
+        #Clean up files
+        os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
+        os.remove(mafft_out)
+
+        # Step 3: Process alignment file
+        matches = process_alignment_file(mafft_out)
+
+        # Step 4: Create alignment DataFrame
+        alignment_df = create_alignment_dataframe(matches, count_of_lines)
+
+        # Step 5: Pivot DataFrame
+        alignment_df_pivoted = alignment_df.pivot_table(
+            index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
+        )
+        alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
+        
+        #Clean up df
+        del alignment_df 
+
+        # Step 6: Find conserved regions
+        start_positions, end_positions = find_conserved_regions(alignment_df_pivoted)
+
+        # Step 7: Extract shortened sequences
+        fasta_file_path = f'{name}_temporal.fasta'
+        sequence_dict = {record.id: str(record.seq) for record in SeqIO.parse(fasta_file_path, 'fasta')}
+        os.remove(fasta_file_path)
+
+        final_position_dict = {}
+        for seq_id, start_value in alignment_df_pivoted.loc[start_positions, 'Sequence_position'].items():
+            end_value = alignment_df_pivoted.loc[end_positions, 'Sequence_position'][seq_id]
+            final_position_dict[seq_id] = (start_value, end_value)
+
+        shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
+	del alignment_df_pivoted
+
+        return shortened_sequences
+
+    except Exception as e:
+        print(f"Error in sequence_cuter for {name}: {e}")
+        return {}
 
 @ray.remote(num_cpus=2)
 def sequence_cutting(file_name_for_msa,centroid,cons_file,count_of_lines,alt_centroid):
