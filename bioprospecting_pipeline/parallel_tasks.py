@@ -1209,10 +1209,10 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         #Clean up files
         name_alt = "_plusCONS.aln"
         os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
-        os.remove(mafft_out)
 
         # Step 3: Process alignment file
         matches = process_alignment_file(mafft_out)
+        os.remove(mafft_out)
 
         # Step 4: Create alignment DataFrame
         alignment_df = create_alignment_dataframe(matches, count_of_lines)
