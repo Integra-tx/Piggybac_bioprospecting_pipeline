@@ -1213,13 +1213,19 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         # Step 3: Process alignment file
         matches = process_alignment_file(mafft_out)
         os.remove(mafft_out)
+        
+        # Debug: Check regex matches
+        print("Regex Matches:", matches[:5])
 
+        if not matches:
+            raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
         # Step 4: Create alignment DataFrame
         alignment_df = create_alignment_dataframe(matches, count_of_lines)
 
         # Step 5: Pivot DataFrame
         alignment_df_pivoted = alignment_df.pivot_table(
-            index='Alignment_Position', columns='Accession', values=['Sequence_position'], aggfunc={'Sequence_position': 'first'})
+            index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
+        )
         alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
         
         #Clean up df
