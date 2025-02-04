@@ -1120,7 +1120,9 @@ def create_alignment_dataframe(matches, count_of_lines):
                 alignment_data['Sequence_position'].append(current_position)
             else:
                 alignment_data['Sequence_position'].append(current_dict.get(accession, 0))
-
+    # Debug: Check DataFrame structure
+    print("Alignment DataFrame Columns:", alignment_df.columns)
+    print("Alignment DataFrame Head:\n", alignment_df.head())
     return pd.DataFrame(alignment_data)
 
 
@@ -1212,7 +1214,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
         # Step 3: Process alignment file
         matches = process_alignment_file(mafft_out)
-        os.remove(mafft_out)
+        # os.remove(mafft_out)
         
         # Debug: Check regex matches
         print("Regex Matches:", matches[:5])
