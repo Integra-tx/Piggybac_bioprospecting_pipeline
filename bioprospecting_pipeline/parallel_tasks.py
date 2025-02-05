@@ -1213,7 +1213,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
         # Step 3: Process alignment file
         matches = process_alignment_file(mafft_out)
-        # os.remove(mafft_out)
+        os.remove(mafft_out)
         
 
         if not matches:
