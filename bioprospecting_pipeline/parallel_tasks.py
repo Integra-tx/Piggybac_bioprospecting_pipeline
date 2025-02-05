@@ -1122,8 +1122,6 @@ def create_alignment_dataframe(matches, count_of_lines):
                 alignment_data['Sequence_position'].append(current_dict.get(accession, 0))
     # Debug: Check DataFrame structure
     alignment_temp = pd.DataFrame(alignment_data)
-    print("Alignment DataFrame Columns:", alignment_temp.columns)
-    print("Alignment DataFrame Head:\n", alignment_temp.head())
     return alignment_temp
 
 
@@ -1217,8 +1215,6 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         matches = process_alignment_file(mafft_out)
         # os.remove(mafft_out)
         
-        # Debug: Check regex matches
-        print("Regex Matches:", matches[:5])
 
         if not matches:
             raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
@@ -1227,14 +1223,16 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 	    
         if 'Sequence_position' not in alignment_df.columns:
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
+		
+        print("Alignment DataFrame Info:\n", alignment_df.info())  # Checks for missing values
+        print("Unique values in Sequence_position:\n", alignment_df['Sequence_position'].unique())
+        print("Missing values in Sequence_position:", alignment_df['Sequence_position'].isna().sum())
 
         # Step 5: Pivot DataFrame
         alignment_df_pivoted = alignment_df.pivot_table(
             index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
-        )
+        ).reset_index()
 	    
-        # Debug: Check pivot table structure
-        print("Pivot Table Head:\n", alignment_df_pivoted.head())
 	    
         alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
         
