@@ -1119,7 +1119,11 @@ def create_alignment_dataframe(matches, count_of_lines):
                 current_dict[accession] = current_position
                 alignment_data['Sequence_position'].append(current_position)
             else:
-                alignment_data['Sequence_position'].append(current_dict.get(accession, 0))
+              if accession in current_dict:
+                gap_position = current_dict[accession]
+                alignment_data['Sequence_position'].append(gap_position)
+              else:
+                alignment_data['Sequence_position'].append(0)
     # Debug: Check DataFrame structure
     alignment_temp = pd.DataFrame(alignment_data)
     return alignment_temp
