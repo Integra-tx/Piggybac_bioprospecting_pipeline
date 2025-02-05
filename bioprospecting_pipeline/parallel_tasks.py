@@ -1224,11 +1224,18 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
         # Step 4: Create alignment DataFrame
         alignment_df = create_alignment_dataframe(matches, count_of_lines)
+	    
+        if 'Sequence_position' not in alignment_df.columns:
+            raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
 
         # Step 5: Pivot DataFrame
         alignment_df_pivoted = alignment_df.pivot_table(
             index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
         )
+	    
+        # Debug: Check pivot table structure
+        print("Pivot Table Head:\n", alignment_df_pivoted.head())
+	    
         alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
         
         #Clean up df
