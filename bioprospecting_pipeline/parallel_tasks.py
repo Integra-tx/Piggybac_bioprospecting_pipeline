@@ -287,7 +287,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
 
             if 'target sequence database:' in line:
                 genome_name = line.split('/')[-1]
-                print(genome_name)
                 genome_name = genome_name.split('_')[0] + '_' + genome_name.split('_')[
                     1] if 'data_genomes' not in line else genome_name
 
@@ -1227,10 +1226,6 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 	    
         if 'Sequence_position' not in alignment_df.columns:
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
-		
-        print("Alignment DataFrame Info:\n", alignment_df.info())  # Checks for missing values
-        print("Unique values in Sequence_position:\n", alignment_df['Sequence_position'].unique())
-        print("Missing values in Sequence_position:", alignment_df['Sequence_position'].isna().sum())
 
         # Step 5: Pivot DataFrame
         alignment_df_pivoted = alignment_df.pivot_table(
