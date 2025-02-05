@@ -1121,9 +1121,10 @@ def create_alignment_dataframe(matches, count_of_lines):
             else:
                 alignment_data['Sequence_position'].append(current_dict.get(accession, 0))
     # Debug: Check DataFrame structure
-    print("Alignment DataFrame Columns:", alignment_df.columns)
-    print("Alignment DataFrame Head:\n", alignment_df.head())
-    return pd.DataFrame(alignment_data)
+    alignment_temp = pd.DataFrame(alignment_data)
+    print("Alignment DataFrame Columns:", alignment_temp.columns)
+    print("Alignment DataFrame Head:\n", alignment_temp.head())
+    return alignment_temp
 
 
 def find_conserved_regions(alignment_df_pivoted):
