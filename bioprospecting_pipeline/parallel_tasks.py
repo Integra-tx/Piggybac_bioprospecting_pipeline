@@ -1091,6 +1091,7 @@ def create_alignment_dataframe(matches, count_of_lines):
     triple_count = -1
     big_count = 0
     current_dict = {}
+    size_count = True
     sequence_length = None
 
     for accession, sequence, position in matches:
@@ -1099,14 +1100,17 @@ def create_alignment_dataframe(matches, count_of_lines):
             big_count += 1
             triple_count = 0
 
-        if sequence_length is None:
+        if size_count:
             sequence_length = len(sequence)
+            size_count = False
 
         gap_count = int(str(sequence).count('-'))
         alt_position_count = 0
+	position_count = 0
 
         for pos, residue in enumerate(sequence):
-            alignment_position = pos + 1 + (big_count * sequence_length)
+            position_count += 1
+            alignment_position = position_count + (big_count * sequence_length)
             alignment_data['Accession'].append(accession)
             alignment_data['Alignment_Position'].append(alignment_position)
 
