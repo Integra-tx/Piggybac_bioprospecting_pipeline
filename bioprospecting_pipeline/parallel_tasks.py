@@ -1223,7 +1223,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
         # Step 4: Create alignment DataFrame
         alignment_df = create_alignment_dataframe(matches, count_of_lines)
-        alignment_df.to_csv('out_datafram.csv', index=FALSE)
+        alignment_df.to_csv('out_datafram.csv')
 	    
         if 'Sequence_position' not in alignment_df.columns:
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
