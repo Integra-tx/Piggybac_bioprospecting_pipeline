@@ -1106,7 +1106,7 @@ def create_alignment_dataframe(matches, count_of_lines):
 
         gap_count = int(str(sequence).count('-'))
         alt_position_count = 0
-	position_count = 0
+        position_count = 0
 
         for pos, residue in enumerate(sequence):
             position_count += 1
