@@ -1233,6 +1233,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
 
         # Step 5: Pivot DataFrame
+        alignment_df.reset_index(drop=True, inplace=True)
         alignment_df_pivoted = alignment_df.pivot_table(
             index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
         ).reset_index()
