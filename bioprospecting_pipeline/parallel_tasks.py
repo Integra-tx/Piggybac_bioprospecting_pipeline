@@ -1234,10 +1234,15 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
         # Step 5: Pivot DataFrame
         alignment_df.reset_index(drop=True, inplace=True)
-        alignment_df_pivoted = alignment_df.pivot_table(
-            index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
-        ).reset_index()
-        alignment_df_pivoted.to_csv('out_datafram_pivot.csv')
+        try:
+          alignment_df_pivoted = alignment_df.pivot_table(
+              index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
+          ).reset_index()
+        except:
+          alignment_df.to_csv('out_datafram_pivot.csv')
+          alignment_df_pivoted = alignment_df.pivot_table(
+              index='Alignment_Position', columns='Accession', values='Sequence_position', aggfunc='first'
+          ).reset_index()
 	    
 	    
         alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
