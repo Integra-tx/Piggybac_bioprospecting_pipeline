@@ -1245,7 +1245,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
           consensus_chars = list(consensus_seq)
           print('Consensus:' + str(len(list(consensus_chars))) + ' DF:' + str(len(alignment_df_pivoted.index)))
           alignment_df_pivoted['Consensus_Seq'] = consensus_chars
-          alignment_df.to_csv('out_datafram_pivot.csv')
+          alignment_df_pivoted.to_csv('out_datafram_pivot.csv')
         except:
           print(f'Failed_consensus:{name}')
 	    
