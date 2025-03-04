@@ -2,8 +2,8 @@
 
 
 # Input and output paths
-#input_path: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/genomes_subset/"
-input_path: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/genomes_subset/Genomes_bacteria"
+input_path: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/genomes_subset/"
+
 #input_path: "/home/alejandro_af_integra_tx_com/Genomes"               # Path to the input directory containing genome files
 output_path: "./results"                  # Path to save the output files
 
@@ -11,8 +11,7 @@ output_path: "./results"                  # Path to save the output files
 pipeline_step: 3                         # Pipeline step to run (1, 2, 3, 4, or 5)
 
 # Frahmmer settings
-#seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
-seed: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Tnpb_seed.aln" 
+seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
 orf_length: 400                          # Minimum ORF length to be searched (in amino acids)
 
 # Palindrome matching settings
