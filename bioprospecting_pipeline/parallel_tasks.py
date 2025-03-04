@@ -1227,13 +1227,11 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
         # Step 4: Create alignment DataFrame
         alignment_df = create_alignment_dataframe(matches, count_of_lines)
-        alignment_df.to_csv('out_datafram.csv')
 	    
         if 'Sequence_position' not in alignment_df.columns:
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
 
         # Step 5: Pivot DataFrame
-        alignment_df.reset_index(drop=True, inplace=True)
         try:
             alignment_df_pivoted = alignment_df.pivot_table(index='Alignment_Position', columns='Accession', values=['Sequence_position'], aggfunc={'Sequence_position': 'first'}).reset_index()
         except:
@@ -1243,7 +1241,6 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
         try:
           consensus_chars = list(consensus_seq)
-          print('Consensus:' + str(len(list(consensus_chars))) + ' DF:' + str(len(alignment_df_pivoted.index)))
           alignment_df_pivoted['Consensus_Seq'] = consensus_chars
           alignment_df_pivoted.to_csv('out_datafram_pivot.csv')
         except:
