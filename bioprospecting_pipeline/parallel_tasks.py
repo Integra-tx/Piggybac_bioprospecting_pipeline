@@ -1187,23 +1187,23 @@ def find_conserved_regions(alignment_df_pivoted):
 
 
 def extract_shortened_sequences(final_position_dict, sequence_dict):
-    """Extract shortened sequences based on start and end positions."""
-    print(sequence_dict)
-    shortened_sequences = {}
-    for sequence_id, (start, end) in final_position_dict.items():
-        name_check = sequence_id.strip()
-        try:
-            full_sequence = sequence_dict[name_check]
-            new_start = max(start - 15, 0) if start - 15 >= 0 else start
-            new_end = min(end + 15, len(full_sequence)) if end + 15 <= len(full_sequence) else end
-            shortened_sequence = full_sequence[new_start:new_end + 1]
-            shortened_sequences[sequence_id] = shortened_sequence
-        except KeyError:
-            print(f"Sequence ID {name_check} not found in sequence dictionary.")
-        except Exception as e:
-            print(f"Error processing sequence {name_check}: {e}")
+  """Extract shortened sequences based on start and end positions."""
+  shortened_sequences = {}
+  for sequence_id, (start, end) in final_position_dict.items():
+    print('Start:' + str(start) + 'End:' + str(end))
+    name_check = sequence_id.strip()
+    try:
+      full_sequence = sequence_dict[name_check]
+      new_start = max(start - 15, 0) if start - 15 >= 0 else start
+      new_end = min(end + 15, len(full_sequence)) if end + 15 <= len(full_sequence) else end
+      shortened_sequence = full_sequence[new_start:new_end + 1]
+      shortened_sequences[sequence_id] = shortened_sequence
+    except KeyError:
+      print(f"Sequence ID {name_check} not found in sequence dictionary.")
+    except Exception as e:
+      print(f"Error processing sequence {name_check}: {e}")
 
-    return shortened_sequences
+  return shortened_sequences
 
 
 def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
