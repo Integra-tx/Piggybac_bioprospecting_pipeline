@@ -1188,6 +1188,7 @@ def find_conserved_regions(alignment_df_pivoted):
 
 def extract_shortened_sequences(final_position_dict, sequence_dict):
     """Extract shortened sequences based on start and end positions."""
+    print(sequence_dict)
     shortened_sequences = {}
     for sequence_id, (start, end) in final_position_dict.items():
         name_check = sequence_id.strip()
@@ -1232,6 +1233,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
 
         # Step 5: Pivot DataFrame
+        alignment_df.reset_index(drop=True, inplace=True)
         try:
             alignment_df_pivoted = alignment_df.pivot_table(index='Alignment_Position', columns='Accession', values=['Sequence_position'], aggfunc={'Sequence_position': 'first'}).reset_index()
         except:
@@ -1262,7 +1264,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         for seq_id, start_value in alignment_df_pivoted.loc[start_positions, 'Sequence_position'].items():
             end_value = alignment_df_pivoted.loc[end_positions, 'Sequence_position'][seq_id]
             final_position_dict[seq_id] = (start_value, end_value)
-        print(final_position_dict)
+        
         shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
         del alignment_df_pivoted
 
