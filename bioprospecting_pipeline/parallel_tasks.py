@@ -1240,9 +1240,10 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             print(f'Failed_dataframe:{name}')
             alignment_df.to_csv('out_datafram_pivot.csv')
 
-	    
-	    
-        alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
+        try:
+          alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
+        except:
+          print(f'Failed_consensus:{name}')
 	    
         
         #Clean up df
