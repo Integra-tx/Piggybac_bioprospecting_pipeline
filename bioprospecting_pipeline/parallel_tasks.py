@@ -1190,7 +1190,7 @@ def extract_shortened_sequences(final_position_dict, sequence_dict):
   """Extract shortened sequences based on start and end positions."""
   shortened_sequences = {}
   for sequence_id, (start, end) in final_position_dict.items():
-    print('Start:' + str(start) + 'End:' + str(end))
+    print('Start:' + str(int(start)) + 'End:' + int(str(end)))
     name_check = sequence_id.strip()
     try:
       full_sequence = sequence_dict[name_check]
