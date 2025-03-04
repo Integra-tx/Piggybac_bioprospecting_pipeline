@@ -1242,7 +1242,6 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
 
         try:
-          print(consensus_seq)
           consensus_chars = list(consensus_seq)
           print(len(consensus_chars) + '---' + alignment_df_pivoted.shape[0])
           alignment_df_pivoted['Consensus_Seq'] = consensus_chars
