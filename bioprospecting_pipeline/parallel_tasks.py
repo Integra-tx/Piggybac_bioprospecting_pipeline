@@ -1266,6 +1266,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         end_positions_sequence = alignment_df_pivoted.loc[end_positions, ('Sequence_position', slice(None))]
 
         position_dict = {}
+        final_position_dict = {}
         for seq_id, sequence_position_data in start_positions_sequence.iterrows():
             # Extract the sequence positions for the current sequence
             for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
