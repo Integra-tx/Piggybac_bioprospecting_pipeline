@@ -1244,8 +1244,6 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 	    
         alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
 	    
-	    
-        alignment_df_pivoted['Consensus_Seq'] = list(consensus_seq)
         
         #Clean up df
         del alignment_df 
