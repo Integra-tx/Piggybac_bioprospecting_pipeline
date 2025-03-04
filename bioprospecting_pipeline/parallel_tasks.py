@@ -1243,7 +1243,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
 
         try:
           consensus_chars = list(consensus_seq)
-          print(len(consensus_chars) + '---' + alignment_df_pivoted.shape[0])
+          print('Consensus:' + str(len(list(consensus_chars))) + ' DF:' + str(len(alignment_df_pivoted.index)))
           alignment_df_pivoted['Consensus_Seq'] = consensus_chars
           alignment_df.to_csv('out_datafram_pivot.csv')
         except:
