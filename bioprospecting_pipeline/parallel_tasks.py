@@ -1190,7 +1190,6 @@ def extract_shortened_sequences(final_position_dict, sequence_dict):
   """Extract shortened sequences based on start and end positions."""
   shortened_sequences = {}
   for sequence_id, (start, end) in final_position_dict.items():
-    print('Start:' + str(int(start)) + 'End:' + int(str(end)))
     name_check = sequence_id.strip()
     try:
       full_sequence = sequence_dict[name_check]
@@ -1277,7 +1276,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
             for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
                 start_value = position_dict[seq_id_alt]
                 final_position_dict[seq_id_alt] = (start_value, position_value)
-        print(final_position_dict)
+
         shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
         del alignment_df_pivoted
 
