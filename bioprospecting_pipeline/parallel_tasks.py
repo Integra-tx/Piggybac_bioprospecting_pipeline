@@ -1260,10 +1260,22 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         sequence_dict = {record.id: str(record.seq) for record in SeqIO.parse(fasta_file_path, 'fasta')}
         os.remove(fasta_file_path)
 
-        final_position_dict = {}
-        for seq_id, start_value in alignment_df_pivoted.loc[start_positions, 'Sequence_position'].items():
-            end_value = alignment_df_pivoted.loc[end_positions, 'Sequence_position'][seq_id]
-            final_position_dict[seq_id] = (start_value, end_value)
+        # Extract the sequence positions for each sequence at start positions
+        start_positions_sequence = alignment_df_pivoted.loc[start_positions, ('Sequence_position', slice(None))]
+        # Extract the sequence positions for each sequence at end positions
+        end_positions_sequence = alignment_df_pivoted.loc[end_positions, ('Sequence_position', slice(None))]
+
+        position_dict = {}
+        for seq_id, sequence_position_data in start_positions_sequence.iterrows():
+            # Extract the sequence positions for the current sequence
+            for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
+                position_dict[seq_id_alt] = position_value
+
+        for seq_id, sequence_position_data in end_positions_sequence.iterrows():
+            # Extract the sequence positions for the current sequence
+            for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
+                start_value = position_dict[seq_id_alt]
+                final_position_dict[seq_id_alt] = (start_value, position_value)
         
         shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
         del alignment_df_pivoted
