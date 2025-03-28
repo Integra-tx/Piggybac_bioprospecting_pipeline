@@ -1462,7 +1462,7 @@ def matcher(motif, small_sequence, location, seq):
     
 def find_common_substring(seq1, seq2):
     common_substrings = set()
-
+    seq2 = str(Seq(seq2).reverse_complement())
     for i in range(len(seq1) - 9):  # Iterate over all possible starting positions
         substring = seq1[i:i + 10]  # Extract substring of length 10
         if substring in seq2:  # Check if substring is present in seq2
