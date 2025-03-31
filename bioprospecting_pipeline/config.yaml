@@ -15,7 +15,7 @@ pipeline_step: 3                         # Pipeline step to run (1, 2, 3, 4, or 
 # seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
 seed: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Cas12l_0_V-L.hmm" 
 # orf_length: 400                          # Minimum ORF length to be searched (in amino acids)
-orf_length: 250 
+orf_length: 500
 
 # Palindrome matching settings
 mistake: 2                               # Number of mistakes allowed in palindrome matching
