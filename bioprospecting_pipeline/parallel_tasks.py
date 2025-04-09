@@ -1215,8 +1215,8 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     positions = alignment_df_pivoted.index.tolist()
     
     region_started = False
-    region_start = None
-    region_end = None
+    region_start = []
+    region_end = []
     i = 0
 
     while i <= len(consensus_seq) - window_size:
@@ -1247,7 +1247,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
             region_end = [region_end]
             return region_start, region_end
 
-    return None, None
+    return region_start, region_end
 
 
 def extract_shortened_sequences(final_position_dict, sequence_dict):
