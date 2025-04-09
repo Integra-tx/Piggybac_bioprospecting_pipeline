@@ -1184,7 +1184,7 @@ def find_conserved_regions(alignment_df_pivoted):
     return start_positions, end_positions
 	
 def find_conserved_region_with_scoring(alignment_df_pivoted, 
-                                       window_size=25, 
+                                       window_size=10, 
                                        start_threshold=0.9, 
                                        continue_threshold=0.75, 
                                        min_region_length=60):
