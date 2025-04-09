@@ -1186,9 +1186,8 @@ def find_conserved_regions(alignment_df_pivoted):
 def find_conserved_region_with_scoring(alignment_df_pivoted, 
                                        initial_window=6,
                                        window_size=20, 
-                                       start_threshold=0.98, 
-                                       continue_threshold=0.75, 
-                                       min_region_length=60):
+                                       start_threshold=0.9, 
+                                       continue_threshold=0.75):
     """
     Identify a single conserved region using a sliding score window.
     
@@ -1197,7 +1196,6 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
         window_size: number of positions in sliding window
         start_threshold: average score needed to begin conserved region
         continue_threshold: minimum score to continue the region
-        min_region_length: minimum length for the region to be valid
     
     Returns:
         (start_pos, end_pos) of the conserved region, or (None, None) if not found
@@ -1227,7 +1225,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
             if avg_score >= start_threshold:
                 region_start = positions[i]
                 window = consensus_seq[i:i+initial_window + window_size]
-                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
                 if avg_score >= continue_threshold:
                     return(region_start,i)
             i += 1
@@ -1240,7 +1238,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
             if avg_score >= start_threshold:
                 region_start = positions[i]
                 window = consensus_seq[(i -window_size):i ]
-                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
                 if avg_score >= continue_threshold:
                     final_place = region_start + initial_window
             i += 1
@@ -1249,6 +1247,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
         return(final_place)
 
     first_check = initial_check()
+    print(first_check)
     region_end = end_check(first_check[1])
 
     region_start = first_check[0]
@@ -1256,6 +1255,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     region_start = [region_start]
     region_end = [region_end]
     return region_start, region_end
+
 
 
 
