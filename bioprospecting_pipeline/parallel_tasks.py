@@ -1218,8 +1218,9 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     
     region_start = []
     region_end = []
-    i = 0
+    
     def initial_check():
+        i = 0
         while i <= len(consensus_seq) - initial_window:
             window = consensus_seq[i:i+initial_window]
             avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
@@ -1248,7 +1249,6 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
         return(final_place)
 
     first_check = initial_check()
-    print(first_check)
     region_end = end_check(first_check[1])
 
     region_start = first_check[0]
@@ -1256,6 +1256,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     region_start = [region_start]
     region_end = [region_end]
     return region_start, region_end
+
 
 
 
