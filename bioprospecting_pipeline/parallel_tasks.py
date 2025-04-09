@@ -251,7 +251,7 @@ def delete_sequences(identity_list):
     return identity_list, elimination_list
 
 @ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db):
+def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db,min_orf_length=300):
     """
     Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
 
@@ -394,8 +394,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
 		    
 
-        
-        min_orf_length=300
         try:
             os.path.isfile(dna_filename)
             pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
