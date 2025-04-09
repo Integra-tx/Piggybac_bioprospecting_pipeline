@@ -1248,6 +1248,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
         return(final_place)
 
     first_check = initial_check()
+    print(first_check)
     region_end = end_check(first_check[1])
 
     region_start = first_check[0]
@@ -1255,6 +1256,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     region_start = [region_start]
     region_end = [region_end]
     return region_start, region_end
+
 
 
 
