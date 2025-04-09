@@ -424,7 +424,7 @@ def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf
             parse.append(run_frehmmr.remote(i, output, input_1, seed, orf_length))
         elif type == 2:
             name = i
-            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db))
+            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,orf_length))
         elif type == 3:
             parse.append(genome_reader.remote(i))
     newlist = ray.get(parse)
