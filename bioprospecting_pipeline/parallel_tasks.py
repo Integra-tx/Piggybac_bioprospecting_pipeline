@@ -1243,6 +1243,8 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     # Check minimum length
     if region_start is not None and region_end is not None:
         if (region_end - region_start + 1) >= min_region_length:
+            region_start = [region_start]
+            region_end = [region_end]
             return region_start, region_end
 
     return None, None
