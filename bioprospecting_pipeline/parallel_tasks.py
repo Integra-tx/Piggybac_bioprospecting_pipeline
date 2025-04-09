@@ -1237,7 +1237,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
             i += 1
 
     # If region ran to the end without a drop
-    if region_started and region_end is None:
+    if region_started and not region_end:
         region_end = positions[-1]
 
     # Check minimum length
@@ -1349,7 +1349,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         return shortened_sequences
 
     except Exception as e:
-        print(f"Error in sequence_cuter for {name}: {e}")
+        print(f"Error in sequence_cuter for {name}: {e} {start_positions},{end_positions}")
         return {}
 
 @ray.remote(num_cpus=2)
