@@ -1231,9 +1231,8 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
             else:
                 i += 1  # keep searching for start
         else:
-            if avg_score < continue_threshold:
+            if avg_score > continue_threshold:
                 region_end = positions[i + window_size - 1]
-                break
             i += 1
 
     # If region ran to the end without a drop
