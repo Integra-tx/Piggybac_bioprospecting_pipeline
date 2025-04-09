@@ -1220,17 +1220,15 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     region_end = []
     i = 0
     def initial_check():
-        region_started = False
         while i <= len(consensus_seq) - initial_window:
             window = consensus_seq[i:i+initial_window]
             avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
-            if not region_started:
-                if avg_score >= start_threshold:
-                    region_start = positions[i]
-                    window = consensus_seq[i:i+initial_window + window_size]
-                    avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
-                    if avg_score >= continue_threshold:
-                        return(region_start,i)
+            if avg_score >= start_threshold:
+                region_start = positions[i]
+                window = consensus_seq[i:i+initial_window + window_size]
+                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                if avg_score >= continue_threshold:
+                    return(region_start,i)
             i += 1
     def end_check(i):
         begin_i = i
@@ -1238,12 +1236,12 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
         while i <= len(consensus_seq) - begin_i - initial_window:
             window = consensus_seq[i:i+initial_window]
             avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
-                if avg_score >= start_threshold:
-                    region_start = positions[i]
-                    window = consensus_seq[(i -window_size):i ]
-                    avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
-                    if avg_score >= continue_threshold:
-                        final_place = region_start + initial_window
+            if avg_score >= start_threshold:
+                region_start = positions[i]
+                window = consensus_seq[(i -window_size):i ]
+                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                if avg_score >= continue_threshold:
+                    final_place = region_start + initial_window
             i += 1
         if not final_place:
             final_place = positions[-1]
@@ -1257,6 +1255,7 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     region_start = [region_start]
     region_end = [region_end]
     return region_start, region_end
+
 
 
 
