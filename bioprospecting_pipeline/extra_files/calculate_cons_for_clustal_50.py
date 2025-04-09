@@ -438,8 +438,10 @@ def calculate_cons_for_clustal_protein(
 
         if current_pos_list.count('-') >= len(current_pos_list) * 0.7:
             conservation_line += "+"
-        elif most_frecuent != '-' and current_pos_list.count(most_frecuent) >= len(current_pos_list) * 0.54:
+        elif most_frecuent != '-' and current_pos_list.count(most_frecuent) >= len(current_pos_list) * 0.7:
             conservation_line += "*"
+        elif most_frecuent != '-' and current_pos_list.count(most_frecuent) >= len(current_pos_list) * 0.54:
+            conservation_line += ":"
         elif any([set(current_pos_list).issubset(x) for x in strongly_similar_aa_tuples]):
             conservation_line+= ":"
         elif any([set(current_pos_list).issubset(x) for x in weakly_similar_aa_tuples]):
