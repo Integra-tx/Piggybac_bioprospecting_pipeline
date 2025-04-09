@@ -140,7 +140,7 @@ def main():
         # Run clustering with mmseqs
         if pipeline != 5:
             sys.stderr.write('Start transposon boundary refining\n')
-            os.system(f"mmseqs easy-cluster {location} clusterRes tmp --min-seq-id 0.9 -c 0.7 --cov-mode 1")
+            os.system(f"mmseqs easy-cluster {location} clusterRes tmp --min-seq-id 0.8 -c 0.8 --cov-mode 1")
             # Save clustering results to output folder
             shutil.move("clusterRes_rep_seq.fasta", f"{output}/cluster_representative_seq.fasta")
             shutil.move("clusterRes_cluster.tsv", f"{output}/cluster_table.tsv")
