@@ -1216,7 +1216,8 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     
     
     region_start = []
-    region_end = []
+    region_end_final = []
+    region_end = False
     
 
     i = 0
@@ -1231,22 +1232,23 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
                 avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
                 if avg_score >= continue_threshold:
                     region_check = True
-                    i = i + initial_window + window_size
+                    i = i + initial_window + window_size -1
             else:
                 region_end = positions[i]
                 window = consensus_seq[(i -window_size):i ]
                 avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
                 if avg_score >= continue_threshold:
-                    region_end = region_end + initial_window
+                    region_end_final = region_end + initial_window
             i += 1
 
-    if not region_end:
-        region_end = positions[-1]
+    if not region_end_final:
+        region_end_final = positions[-1]
 
 
     region_start = [region_start]
-    region_end = [region_end]
+    region_end = [region_end_final]
     return region_start, region_end
+
 
 
 
