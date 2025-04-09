@@ -1184,7 +1184,8 @@ def find_conserved_regions(alignment_df_pivoted):
     return start_positions, end_positions
 	
 def find_conserved_region_with_scoring(alignment_df_pivoted, 
-                                       window_size=10, 
+                                       initial_window=6,
+                                       window_size=20, 
                                        start_threshold=0.9, 
                                        continue_threshold=0.75, 
                                        min_region_length=60):
@@ -1214,39 +1215,49 @@ def find_conserved_region_with_scoring(alignment_df_pivoted,
     consensus_seq = alignment_df_pivoted['Consensus_Seq'].tolist()
     positions = alignment_df_pivoted.index.tolist()
     
-    region_started = False
+    
     region_start = []
     region_end = []
     i = 0
-
-    while i <= len(consensus_seq) - window_size:
-        window = consensus_seq[i:i+window_size]
-        avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
-
-        if not region_started:
-            if avg_score >= start_threshold:
-                region_started = True
-                region_start = positions[i]
-                i += 1  # start walking
-            else:
-                i += 1  # keep searching for start
-        else:
-            if avg_score > continue_threshold:
-                region_end = positions[i + window_size - 1]
+    def initial_check():
+        region_started = False
+        while i <= len(consensus_seq) - initial_window:
+            window = consensus_seq[i:i+initial_window]
+            avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+            if not region_started:
+                if avg_score >= start_threshold:
+                    region_start = positions[i]
+                    window = consensus_seq[i:i+initial_window + window_size]
+                    avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                    if avg_score >= continue_threshold:
+                        return(region_start,i)
             i += 1
+    def end_check(i):
+        begin_i = i
+        final_place = False
+        while i <= len(consensus_seq) - begin_i - initial_window:
+            window = consensus_seq[i:i+initial_window]
+            avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                if avg_score >= start_threshold:
+                    region_start = positions[i]
+                    window = consensus_seq[(i -window_size):i ]
+                    avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
+                    if avg_score >= continue_threshold:
+                        final_place = region_start + initial_window
+            i += 1
+        if not final_place:
+            final_place = positions[-1]
+        return(final_place)
 
-    # If region ran to the end without a drop
-    if region_started and not region_end:
-        region_end = positions[-1]
+    first_check = initial_check()
+    region_end = end_check(first_check[1])
 
-    # Check minimum length
-    if region_start is not None and region_end is not None:
-        if (region_end - region_start + 1) >= min_region_length:
-            region_start = [region_start]
-            region_end = [region_end]
-            return region_start, region_end
+    region_start = first_check[0]
 
+    region_start = [region_start]
+    region_end = [region_end]
     return region_start, region_end
+
 
 
 def extract_shortened_sequences(final_position_dict, sequence_dict):
