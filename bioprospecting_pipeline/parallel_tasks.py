@@ -1182,6 +1182,70 @@ def find_conserved_regions(alignment_df_pivoted):
             end_positions = [final_position]
 
     return start_positions, end_positions
+	
+def find_conserved_region_with_scoring(alignment_df_pivoted, 
+                                       window_size=25, 
+                                       start_threshold=0.9, 
+                                       continue_threshold=0.75, 
+                                       min_region_length=60):
+    """
+    Identify a single conserved region using a sliding score window.
+    
+    Parameters:
+        alignment_df_pivoted: DataFrame with 'Consensus_Seq' column indexed by position
+        window_size: number of positions in sliding window
+        start_threshold: average score needed to begin conserved region
+        continue_threshold: minimum score to continue the region
+        min_region_length: minimum length for the region to be valid
+    
+    Returns:
+        (start_pos, end_pos) of the conserved region, or (None, None) if not found
+    """
+
+    SCORE_MAP = {
+        '*': 1.0,
+        ':': 0.75,
+        '.': 0.5,
+        '+': 0.25,
+        '-': 0.0,
+        ' ': 0.0
+    }
+
+    consensus_seq = alignment_df_pivoted['Consensus_Seq'].tolist()
+    positions = alignment_df_pivoted.index.tolist()
+    
+    region_started = False
+    region_start = None
+    region_end = None
+    i = 0
+
+    while i <= len(consensus_seq) - window_size:
+        window = consensus_seq[i:i+window_size]
+        avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
+
+        if not region_started:
+            if avg_score >= start_threshold:
+                region_started = True
+                region_start = positions[i]
+                i += 1  # start walking
+            else:
+                i += 1  # keep searching for start
+        else:
+            if avg_score < continue_threshold:
+                region_end = positions[i + window_size - 1]
+                break
+            i += 1
+
+    # If region ran to the end without a drop
+    if region_started and region_end is None:
+        region_end = positions[-1]
+
+    # Check minimum length
+    if region_start is not None and region_end is not None:
+        if (region_end - region_start + 1) >= min_region_length:
+            return region_start, region_end
+
+    return None, None
 
 
 def extract_shortened_sequences(final_position_dict, sequence_dict):
@@ -1250,7 +1314,9 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         del alignment_df 
 
         # Step 6: Find conserved regions
-        start_positions, end_positions = find_conserved_regions(alignment_df_pivoted)
+        # start_positions, end_positions = find_conserved_regions(alignment_df_pivoted)
+        start_positions, end_positions = find_conserved_region_with_scoring(alignment_df_pivoted)
+	    
 
         # Step 7: Extract shortened sequences
         fasta_file_path = f'{name}_temporal.fasta'
