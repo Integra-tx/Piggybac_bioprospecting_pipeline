@@ -29,7 +29,7 @@ Run the main pipeline:
 ```bash
 python3 bioprospecting_pipeline/main.py
 ```
-In the file config.yaml, put the path to the folder with genomes in input_path, the path for where the output will be generated, the pathe for rspblast and the path for the database for rpsblast. 
+In the file config.yaml, put the path to the folder with genomes in input_path, the path for where the output will be generated, the path for rspblast and the path for the database for rpsblast. 
 
 ## Additional Requirements
 
