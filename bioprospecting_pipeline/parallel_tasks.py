@@ -534,7 +534,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                     f.write(f">{accession}\n{sequence}\n")
             
                 # Run cmscan
-                tblout_path = os.path.join(tmpdir,"query.tblout")
+                tblout_path = os.path.join(f"{accession}_query.tblout")
                 cmscan_cmd = [
                     "cmscan",
                     "--cut_ga", "--rfam", "--nohmmonly",
