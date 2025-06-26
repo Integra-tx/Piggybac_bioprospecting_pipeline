@@ -559,6 +559,8 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         seq_name = fields[3]
                         evalue = fields[17]
                         score = fields[16]
+			begin_int = fields[9]
+                        end_int = fields[10]
                         clan_mark = fields[18]
                 
                         # Optional: stricter filter only on best (non-overlapping) hits
@@ -568,16 +570,16 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 "Accession": rfam_acc,
                                 "E-value": evalue,
                                 "Score": score,
+                                "Hit": sequence[int(begin_int):int(end_int)]
                             })
-                print('RDNA')
-                print(rdna_hits)
+
                 # Apply prioritization: lowest E-value, then highest score
                 if rdna_hits:
                     best_rdna_hit = sorted(
                         rdna_hits,
                         key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
                     )[0]
-                    top_hit['rDNA'] = best_rdna_hit
+                    top_hit['rDNA'] = f"{best_rdna_hit["Model"}: {best_rdna_hit["Hit"}"
 
 
             
