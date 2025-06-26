@@ -118,7 +118,7 @@ def main():
                     dataframe_pre_clustering.append(temporal_dataframe)
 
                                     # Define the column names for the DataFrame
-                columns = ["Accession", "Taxonomy", "Transposase", "Transposon", "CRD_motif", "DDE", "N-term", "No-nterm", "ttaa", "N_palindromes","palindromes", "SG", "Domains", "Clustered", "Full_dna"]
+                columns = ["Accession", "Taxonomy", "Transposase", "Transposon", "CRD_motif", "DDE", "N-term", "No-nterm", "ttaa", "N_palindromes","palindromes", "SG", "Domains","rDNA", "Clustered", "Full_dna"]
                 flattened_list = flatten_deep(dataframe_pre_clustering)
                 final_pre_clustering_dataframe = pd.DataFrame(flattened_list, columns=columns)
                 final_pre_clustering_dataframe.to_csv(f'{output}/Pre_filtering_complete_data.tsv', sep='\t', index=False)
@@ -302,4 +302,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
