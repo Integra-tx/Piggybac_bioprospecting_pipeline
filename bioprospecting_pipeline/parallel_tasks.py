@@ -1420,7 +1420,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         return shortened_sequences
 
     except Exception as e:
-        print(f"Error in sequence_cuter for {name}: {e} {start_positions},{end_positions}")
+        print(f"Error in sequence_cuter for {name}: {e}")
         return {}
 
 @ray.remote(num_cpus=2)
