@@ -569,7 +569,8 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 "E-value": evalue,
                                 "Score": score,
                             })
-
+                print('RDNA')
+                print(rdna_hits)
                 # Apply prioritization: lowest E-value, then highest score
                 if rdna_hits:
                     best_rdna_hit = sorted(
