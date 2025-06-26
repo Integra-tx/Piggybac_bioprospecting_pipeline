@@ -24,7 +24,7 @@ motif1: "TTAAC"                           # First motif to be searched
 motif2: "GAATT"                           # Second motif (can be optional or set to 0)
 
 # Sequence extraction settings
-extension: 6000                          # Length of the flanking DNA regions to be extracted
+extension: 4000                          # Length of the flanking DNA regions to be extracted
 
 # Clustering options
 full_output: true                        # If true, save the full output from the pipeline
