@@ -563,7 +563,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         description = fields[18] if len(fields) > 18 else ""
                 
                         # Optional: stricter filter only on best (non-overlapping) hits
-                        if ("rRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) and clan_mark == "^":
+                        if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) and clan_mark == "^":
                             rdna_hits.append({
                                 "Model": model_name,
                                 "Accession": rfam_acc,
