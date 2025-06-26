@@ -534,7 +534,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                     f.write(f">{accession}\n{sequence}\n")
             
                 # Run cmscan
-                tblout_path = os.path.join(f"{accession}_query.tblout")
+                tblout_path = os.path.join(tmpdir, "query.tblout")
                 cmscan_cmd = [
                     "cmscan",
                     "--cut_ga", "--rfam", "--nohmmonly",
@@ -562,7 +562,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         clan_mark = fields[18]
                 
                         # Optional: stricter filter only on best (non-overlapping) hits
-                        if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) and "^" in clan_mark:
+                        if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
                             rdna_hits.append({
                                 "Model": model_name,
                                 "Accession": rfam_acc,
