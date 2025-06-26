@@ -557,10 +557,9 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         model_name = fields[1]     # e.g., SSU_rRNA_bacteria
                         rfam_acc = fields[2]       # e.g., RF00177
                         seq_name = fields[3]
-                        evalue = fields[6]
-                        score = fields[7]
-                        clan_mark = fields[17]     # e.g., ^ means best hit in clan
-                        description = fields[18] if len(fields) > 18 else ""
+                        evalue = fields[17]
+                        score = fields[16]
+                        clan_mark = fields[18]
                 
                         # Optional: stricter filter only on best (non-overlapping) hits
                         if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) and clan_mark == "^":
@@ -569,7 +568,6 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 "Accession": rfam_acc,
                                 "E-value": evalue,
                                 "Score": score,
-                                "Description": description
                             })
 
                 # Apply prioritization: lowest E-value, then highest score
