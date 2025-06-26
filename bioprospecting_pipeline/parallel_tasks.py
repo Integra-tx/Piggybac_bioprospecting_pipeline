@@ -559,7 +559,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         seq_name = fields[3]
                         evalue = fields[17]
                         score = fields[16]
-			begin_int = fields[9]
+                        begin_int = fields[9]
                         end_int = fields[10]
                         clan_mark = fields[18]
                 
