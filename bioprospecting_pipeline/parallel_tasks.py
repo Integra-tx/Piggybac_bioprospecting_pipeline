@@ -579,7 +579,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         rdna_hits,
                         key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
                     )[0]
-                    top_hit['rDNA'] = f"{best_rdna_hit["Model"}: {best_rdna_hit["Hit"}"
+                    top_hit['rDNA'] = f"{best_rdna_hit["Model"]}: {best_rdna_hit["Hit"]}"
 
 
             
