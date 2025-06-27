@@ -494,7 +494,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         codon2 = dna[stop_codon_index:stop_codon_index + 3]
                         if codon2 in ['TAA', 'TAG', 'TGA']:
                             position2 = stop_codon_index
-                            if len(dna[position1:position2 + 3]) > 750:
+                            if len(dna[position1:position2 + 3]) > (min_length * 3):
                                 translated_seq = str(Seq(dna[position1:position2 + 3]).translate())
                                 for fract in translated_seq_set:
                                     if translated_seq in fract:
