@@ -379,7 +379,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     trad_end = min(end + extension, len(record.seq))
                                     trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
             
-                                elif strand == "(-)":
+                                elif ids.split("|")[3].strip() == "(-)":
                                     trad_begin = max(end - extension, 0)
                                     trad_end = min(begin + extension, len(record.seq))
                                     trad.write(str(record.seq[trad_begin:trad_end].reverse_complement()).upper() + "\n")
@@ -389,7 +389,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     rna_begin = max(begin - rna_extension, 0)
                                     rna_end = min(end + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end]).upper()
-                                elif strand == "(-)":
+                                elif ids.split("|")[3].strip() == "(-)":
                                     rna_begin = max(end - rna_extension, 0)
                                     rna_end = min(begin + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
