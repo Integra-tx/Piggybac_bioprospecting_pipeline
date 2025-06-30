@@ -35,7 +35,7 @@ def main():
     blast_path = config['blast_path']
     blast_db = config['blast_db']
     frahmmer_aa_path = config['frahmmer_path']
-    extension_rna = config['rna_extension']
+    rna_extension = config['rna_extension']
     
 
     # Start counting the execution time of the pipeline
