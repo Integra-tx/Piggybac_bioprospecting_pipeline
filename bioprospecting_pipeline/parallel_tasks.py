@@ -630,20 +630,9 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             	top_hit['Taxonomy'] = taxonomy_classification
             else:
                 print(f'Taxonomy for {species_name} not found')
-            	
+            print(top_hit)
             return top_hit
-            top_hit['Full_dna'] = sequence
-        
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
+
     else:
         return None
 
