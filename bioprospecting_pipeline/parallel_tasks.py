@@ -691,7 +691,8 @@ def parse_blast_xml(xml_path):
 
 def prepare_result(accession, protein_seq, domain_results):
     """Prepares a result dictionary for DataFrame insertion."""
-
+    print(domain_results)
+    print(protein_seq)
     if 'DDE' in domain_results[0]:
         dde_length = domain_results[1]
         for acc_n, acc_e in dde_length.items():
