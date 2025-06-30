@@ -492,7 +492,7 @@ def orf_finder(file_name, complete_taxonomy_dict, rna_temp, min_orf_length=300, 
         accession = record.id
         sequence = str(record.seq).upper()
         rna_dict[accession] = sequence
-    print(file_name)
+    
     for record in SeqIO.parse(file_name, "fasta"):
         accession = record.id
         sequence = str(record.seq).upper()
@@ -603,7 +603,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 repeated_check = False
                                 break
         
-        
+    print(orfs)
     orf_length = []
     domain_dicts = []
     for i,j in orfs.items():
