@@ -35,6 +35,7 @@ def main():
     blast_path = config['blast_path']
     blast_db = config['blast_db']
     frahmmer_aa_path = config['frahmmer_path']
+    extension_rna = config['rna_extension']
     
 
     # Start counting the execution time of the pipeline
@@ -95,7 +96,7 @@ def main():
                     batched_id = batch_par(file_list)
                     
                     for chunk in batched_id:
-                        batch_write(file_list, extension, output, chunk, input_path, 1, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db)
+                        batch_write(file_list, extension, output, chunk, input_path, 1, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db, rna_extension)
                     sys.stderr.write('BATH Finished\n')
 
                 if len(file_list) == 1 and os.path.isfile(input_path + '/' + file_list[0]):
@@ -114,7 +115,7 @@ def main():
                 batch_list = batch_par(frahmmer_list)
                 dataframe_pre_clustering = []
                 for chunk in batch_list:
-                    temporal_dataframe = batch_write(genome_paths, extension, output, chunk, input_path, 2, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db)
+                    temporal_dataframe = batch_write(genome_paths, extension, output, chunk, input_path, 2, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db, rna_extension)
                     dataframe_pre_clustering.append(temporal_dataframe)
 
                                     # Define the column names for the DataFrame
