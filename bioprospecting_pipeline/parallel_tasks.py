@@ -16,7 +16,7 @@ import subprocess
 import collections
 import math
 import gc
-import tempfile
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -251,7 +251,7 @@ def delete_sequences(identity_list):
     return identity_list, elimination_list
 
 @ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db, extension_rna, min_orf_length=300):
+def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db,min_orf_length=300):
     """
     Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
 
@@ -339,7 +339,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
             raise ValueError(f"Genome path not found for {genome_name}")
 
         dna_filename = f'{name.replace(".out","")}_extended_dna.fa'
-        rna_filename = f'{name.replace(".out","")}_extended_rna.fa'
 
 
 
@@ -364,68 +363,40 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
 
             if run_check:
                 with open(dna_filename, 'w') as trad:
-                    with open('Dna_context.fasta', 'a') as rna_fi:
-                        with open(rna_filename, 'w') as rna_temp:
-                            count = 0
-                            for record in SeqIO.parse(f"{final_path}", "fasta"):
-                                count += 1
-                                for ids in identity_list:
-                                    if record.id == ids.split("|")[1]:
-                                        formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
-                                        trad.write(formatted_id)
-                                        rna_fi.write(formatted_id)
-                                        begin = int(ids.split("|")[2].split("-")[0])
-                                        end = int(ids.split("|")[2].split("-")[1])
-                                        if "+" in ids:
-                                            if (begin - extension) < 0:
-                                                trad_begin = 0
-                                                rna_begin = 0
-                                            else:
-                                                trad_begin = begin - extension
-                                                if (begin - extension_rna) < 0:
-                                                    rna_begin = 0
-                                                else:
-                                                    rna_begin = begin - extension_rna
-                                            if (end + extension) > len(record.seq):
-                                                trad_end = len(record.seq)
-                                                rna_end = len(record.seq)
-                                            else:
-                                                trad_end = end + extension
-                                                if (end + extension_rna) > len(record.seq):
-                                                    rna_end = len(record.seq)
-                                                else:
-                                                    rna_end = end + extension_rna
-                                                    
-                                            trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
-                                            rna_fi.write(str(record.seq[rna_begin:rna_end]).upper() + "\n")
-                                            rna_temp.write(str(record.seq[rna_begin:rna_end]).upper() + "\n")
-                                        elif ids.split("|")[3].strip() == "(-)":
-                                            if (end - extension) < 0:
-                                                trad_begin = 0
-                                                rna_begin = 0
-                                            else:
-                                                trad_begin = end - extension
-                                                if (end - extension_rna) < 0:
-                                                    rna_begin = 0
-                                                else:
-                                                    rna_begin = end - extension_rna
-                                            if (begin + extension) > len(record.seq):
-                                                trad_end = len(record.seq)
-                                                rna_end = len(record.seq)
-                                            else:
-                                                trad_end = begin + extension
-                                                if (begin + extension_rna) > len(record.seq):
-                                                    rna_end = len(record.seq)
-                                                else:
-                                                    rna_end = begin + extension_rna
-                                            trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
-                                            rna_fi.write(str((record.seq[rna_begin:rna_end]).reverse_complement()).upper() + "\n")
-                                            rna_temp.write(str((record.seq[rna_begin:rna_end]).reverse_complement()).upper() + "\n")
+                    count = 0
+                    for record in SeqIO.parse(f"{final_path}", "fasta"):
+                        count += 1
+                        for ids in identity_list:
+                            if record.id == ids.split("|")[1]:
+                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
+                                trad.write(formatted_id)
+                                begin = int(ids.split("|")[2].split("-")[0])
+                                end = int(ids.split("|")[2].split("-")[1])
+                                if "+" in ids:
+                                    if (begin - extension) < 0:
+                                        trad_begin = 0
+                                    else:
+                                        trad_begin = begin - extension
+                                    if (end + extension) > len(record.seq):
+                                        trad_end = len(record.seq)
+                                    else:
+                                        trad_end = end + extension
+                                    trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
+                                elif ids.split("|")[3].strip() == "(-)":
+                                    if (end - extension) < 0:
+                                        trad_begin = 0
+                                    else:
+                                        trad_begin = end - extension
+                                    if (begin + extension) > len(record.seq):
+                                        trad_end = len(record.seq)
+                                    else:
+                                        trad_end = begin + extension
+                                    trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
 		    
 
         try:
             os.path.isfile(dna_filename)
-            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, rna_temp, min_orf_length, blast_path,blast_db)
+            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
             os.remove(dna_filename)
             print(f"Finished with {genome_name}")
             return pre_cluster_dataframe
@@ -446,14 +417,14 @@ def genome_reader(combined_data):
 
 
 
-def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db, extension_rna):
+def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db):
     parse = []
     for i in chunks:
         if type == 1:
             parse.append(run_frehmmr.remote(i, output, input_1, seed, orf_length))
         elif type == 2:
             name = i
-            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,extension_rna,orf_length))
+            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,orf_length))
         elif type == 3:
             parse.append(genome_reader.remote(i))
     newlist = ray.get(parse)
@@ -469,7 +440,7 @@ def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf
         
 
     
-def orf_finder(file_name, complete_taxonomy_dict, rna_temp, min_orf_length=300, blast_path=None, blast_db=None, evalue=0.001):
+def orf_finder(file_name, complete_taxonomy_dict, min_orf_length=300, blast_path=None, blast_db=None, evalue=0.001):
     """
     Identifies ORFs in DNA sequences and performs domain analysis.
     
@@ -487,88 +458,19 @@ def orf_finder(file_name, complete_taxonomy_dict, rna_temp, min_orf_length=300, 
     # Validate BLAST paths
     if not blast_path or not blast_db:
         raise ValueError("BLAST executable path and database path must be provided.")
-    rna_dict = {}
-    for record in SeqIO.parse(rna_temp, "fasta"):
-        accession = record.id
-        sequence = str(record.seq).upper()
-        rna_dict[accession] = sequence
-    os.remove(rna_temp)
+
     for record in SeqIO.parse(file_name, "fasta"):
         accession = record.id
         sequence = str(record.seq).upper()
-        orfs = extract_orfs(sequence, min_orf_length, accession, blast_path, blast_db, complete_taxonomy_dict,rna_dict)
+        orfs = extract_orfs(sequence, min_orf_length, accession, blast_path, blast_db, complete_taxonomy_dict)
         if orfs:
             results.append(orfs)
-
-            
+        
     
     # Update DataFrame with results
     return results
-def parse_evalue(val):
-    """Safely convert E-value to float even if in scientific notation."""
-    try:
-        return float(val)
-    except ValueError:
-        return math.inf
-def rna_extract(accession, sequence):
-    # Write sequence to temp FASTA file
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fasta_path = os.path.join(tmpdir, "query.fa")
-        with open(fasta_path, "w") as f:
-            f.write(f">{accession}\n{sequence}\n")
-    
-        # Run cmscan
-        tblout_path = os.path.join(tmpdir, "query.tblout")
-        cmscan_cmd = [
-            "cmscan",
-            "--cut_ga", "--rfam", "--nohmmonly",
-            "--fmt", "2",
-            "--clanin", "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.clanin",     # ← UPDATE with full path
-            "--tblout", tblout_path,
-            "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.cm",                     # ← UPDATE with full path
-            fasta_path
-        ]
-        
-        subprocess.run(cmscan_cmd, check=True)
-    
-        # Parse results for rDNA hits
-        rdna_hits = []
-        with open(tblout_path, "r") as f:
-            for line in f:
-                if line.startswith("#"):
-                    continue
-                fields = line.strip().split(maxsplit=18)  # Ensure description is preserved as last field
-                model_name = fields[1]     # e.g., SSU_rRNA_bacteria
-                rfam_acc = fields[2]       # e.g., RF00177
-                seq_name = fields[3]
-                evalue = fields[17]
-                score = fields[16]
-                begin_int = fields[9]
-                end_int = fields[10]
-                clan_mark = fields[18]
-        
-                # Optional: stricter filter only on best (non-overlapping) hits
-                if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
-                    rdna_hits.append({
-                        "Model": model_name,
-                        "Accession": rfam_acc,
-                        "E-value": evalue,
-                        "Score": score,
-                        "Hit": sequence[int(begin_int):int(end_int)]
-                    })
 
-        # Apply prioritization: lowest E-value, then highest score
-        if rdna_hits:
-            best_rdna_hit = sorted(
-                rdna_hits,
-                key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
-            )[0]
-            return [best_rdna_hit["Model"], best_rdna_hit["Hit"]]
-        else:
-            return None
-            
-        
-def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete_taxonomy_dict, rna_dict):
+def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete_taxonomy_dict):
     """Extracts ORFs from a DNA sequence."""
     orfs = {}
     translated_seq_set = set()
@@ -586,7 +488,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         codon2 = dna[stop_codon_index:stop_codon_index + 3]
                         if codon2 in ['TAA', 'TAG', 'TGA']:
                             position2 = stop_codon_index
-                            if len(dna[position1:position2 + 3]) > (min_length * 3):
+                            if len(dna[position1:position2 + 3]) > 750:
                                 translated_seq = str(Seq(dna[position1:position2 + 3]).translate())
                                 for fract in translated_seq_set:
                                     if translated_seq in fract:
@@ -618,8 +520,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
         if domain_check: 
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
-            rna_res = rna_extract(accession, rna_dict[accession])
-            top_hit['rDNA'] = f"{rna_res[0]}: {rna_res[1]}"
+        
             
             species = accession.split('_')
             species_name = species[0] + '_' + species[1] 
@@ -1458,7 +1359,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         return shortened_sequences
 
     except Exception as e:
-        print(f"Error in sequence_cuter for {name}: {e}")
+        print(f"Error in sequence_cuter for {name}: {e} {start_positions},{end_positions}")
         return {}
 
 @ray.remote(num_cpus=2)
