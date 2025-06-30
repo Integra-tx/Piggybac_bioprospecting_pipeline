@@ -620,6 +620,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             if not domain_dicts[0]:
                 domain_check = False
         if domain_check: 
+            print(domain_dicts)
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
             rna_res = rna_extract(accession, rna_dict[accession])
@@ -632,7 +633,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             	top_hit['Taxonomy'] = taxonomy_classification
             else:
                 print(f'Taxonomy for {species_name} not found')
-            print(top_hit)
+            
             return top_hit
 
     else:
@@ -685,7 +686,6 @@ def parse_blast_xml(xml_path):
                         small_dict[domain] = hit_location
 
             if small_dict:
-                print(small_dict)
                 return small_dict, hits_dict
 
 
@@ -1071,8 +1071,8 @@ def analyze_domains(protein_seq, accession, blast_path, blast_db, evalue):
     domain_results = parse_blast_xml(temp_xml)
     
     # Cleanup temporary files
-    # os.remove(temp_fasta)
-    # os.remove(temp_xml)
+    os.remove(temp_fasta)
+    os.remove(temp_xml)
     
     return domain_results
 
