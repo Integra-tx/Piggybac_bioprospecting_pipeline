@@ -610,7 +610,6 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
     for i,j in orfs.items():
         if i in translated_seq_set:
             domain_results = analyze_domains(i, accession, blast_path, blast_db, 0.001)
-            print(domain_results)
             if domain_results:
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
@@ -651,11 +650,7 @@ def parse_blast_xml(xml_path):
             small_dict = {}
             for align in record.alignments:
                 for hsp in align.hsps:
-                    if 'zinc-ribbon' in align.hit_def or 'zf-ribbon' in align.hit_def or 'ZF_C2H2' in align.hit_def or 'PHD' in align.hit_def or 'zf-' in align.hit_def or 'zinc finger' in align.hit_def or 'C1 domain' in align.hit_def or 'C-terminal domain' in align.hit_def:
-                        domain = 'Zinc finger'
-                        hit_location = (hsp.query_start, hsp.query_end)
-                        small_dict[domain] = hit_location
-                    elif 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
+                    if 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
                         domain = 'DDE'
                         hit_location = (hsp.query_start, hsp.query_end)
                         small_dict[domain] = hit_location
@@ -671,6 +666,11 @@ def parse_blast_xml(xml_path):
                             begin = min(smallest)
                             end = max(biggest)
                             hits_dict[query] = str(begin) + '-' + str(end)
+                    elif 'zinc-ribbon' in align.hit_def or 'zf-ribbon' in align.hit_def or 'ZF_C2H2' in align.hit_def or 'PHD' in align.hit_def or 'zf-' in align.hit_def or 'zinc finger' in align.hit_def or 'C1 domain' in align.hit_def or 'C-terminal domain' in align.hit_def:
+                        domain = 'Zinc finger'
+                        hit_location = (hsp.query_start, hsp.query_end)
+                        small_dict[domain] = hit_location
+
                     elif 'Family of unknown function' in align.hit_def or 'Domain of unknown function' in align.hit_def:
                         term_a = False
                     else:
@@ -685,6 +685,7 @@ def parse_blast_xml(xml_path):
                         small_dict[domain] = hit_location
 
             if small_dict:
+                print(small_dict)
                 return small_dict, hits_dict
 
 
