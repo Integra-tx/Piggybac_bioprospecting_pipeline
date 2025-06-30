@@ -603,7 +603,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 repeated_check = False
                                 break
         
-    print(orfs)
+    
     orf_length = []
     domain_dicts = []
     for i,j in orfs.items():
@@ -612,6 +612,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             if domain_results:
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
+    print(domain_dicts)
     if domain_dicts:
         domain_check = True
         if len(domain_dicts) == 1:
