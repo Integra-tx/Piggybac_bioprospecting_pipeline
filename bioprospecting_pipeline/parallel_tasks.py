@@ -552,6 +552,13 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
     else:
         return None
 
+def parse_evalue(val):
+    """Safely convert E-value to float even if in scientific notation."""
+    try:
+        return float(val)
+    except ValueError:
+        return math.inf
+        
 def rna_extract(accession, sequence):
     # Write sequence to temp FASTA file
 
