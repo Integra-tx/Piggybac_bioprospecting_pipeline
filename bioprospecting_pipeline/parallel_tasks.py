@@ -1071,8 +1071,8 @@ def analyze_domains(protein_seq, accession, blast_path, blast_db, evalue):
     domain_results = parse_blast_xml(temp_xml)
     
     # Cleanup temporary files
-    os.remove(temp_fasta)
-    os.remove(temp_xml)
+    # os.remove(temp_fasta)
+    # os.remove(temp_xml)
     
     return domain_results
 
