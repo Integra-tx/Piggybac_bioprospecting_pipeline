@@ -25,6 +25,7 @@ motif2: "GAATT"                           # Second motif (can be optional or set
 
 # Sequence extraction settings
 extension: 4000                          # Length of the flanking DNA regions to be extracted
+rna_extension: 6000
 
 # Clustering options
 full_output: true                        # If true, save the full output from the pipeline
