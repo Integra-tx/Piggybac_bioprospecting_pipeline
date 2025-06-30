@@ -609,10 +609,11 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
     for i,j in orfs.items():
         if i in translated_seq_set:
             domain_results = analyze_domains(i, accession, blast_path, blast_db, 0.001)
+            print(domain_results)
             if domain_results:
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
-    print(domain_dicts)
+
     if domain_dicts:
         domain_check = True
         if len(domain_dicts) == 1:
