@@ -371,6 +371,8 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                             if record.id == ids.split("|")[1]:
                                 formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
                                 trad.write(formatted_id)
+                                if '1989019' in formatted_id:
+                                    print(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
              # Handle DNA extension and writing to file
@@ -389,13 +391,17 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     rna_begin = max(begin - rna_extension, 0)
                                     rna_end = min(end + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end]).upper()
+                                    rna_key = formatted_id.strip()
+                                    rna_sequences[rna_key] = rna_seq
                                 elif ids.split("|")[3].strip() == "(-)":
                                     rna_begin = max(end - rna_extension, 0)
                                     rna_end = min(begin + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
+                                    rna_key = formatted_id.strip()
+                                    rna_sequences[rna_key] = rna_seq
             
-                                rna_key = formatted_id.strip()
-                                rna_sequences[rna_key] = rna_seq
+                                
+                                
 		    
 
                 # try:
