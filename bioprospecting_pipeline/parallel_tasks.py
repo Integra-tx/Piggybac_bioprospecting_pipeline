@@ -590,6 +590,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                             position2 = stop_codon_index
                             if len(dna[position1:position2 + 3]) > (min_length * 3):
                                 translated_seq = str(Seq(dna[position1:position2 + 3]).translate())
+                                translated_seq = translated_seq.replace('*','')
                                 for fract in translated_seq_set:
                                     if translated_seq in fract:
                                         repeated_check = True
@@ -603,8 +604,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 repeated_check = False
                                 break
         
-    print(sequence)
-    print(orfs)
+
     orf_length = []
     domain_dicts = []
     for i,j in orfs.items():
