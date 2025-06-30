@@ -423,16 +423,16 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                             rna_temp.write(str((record.seq[rna_begin:rna_end]).reverse_complement()).upper() + "\n")
 		    
 
-        try:
-            os.path.isfile(dna_filename)
-            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, rna_temp, min_orf_length, blast_path,blast_db)
-            os.remove(dna_filename)
-            print(f"Finished with {genome_name}")
-            return pre_cluster_dataframe
-        except:
-            with open('Genomes_without_hits.txt','a') as empty_file:
-                empty_file.write('dna_filename\n')
-            return None
+        # try:
+        os.path.isfile(dna_filename)
+        pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, rna_temp, min_orf_length, blast_path,blast_db)
+        os.remove(dna_filename)
+        print(f"Finished with {genome_name}")
+        return pre_cluster_dataframe
+        # except:
+        #     with open('Genomes_without_hits.txt','a') as empty_file:
+        #         empty_file.write('dna_filename\n')
+        #     return None
 
 @ray.remote
 def genome_reader(combined_data):
