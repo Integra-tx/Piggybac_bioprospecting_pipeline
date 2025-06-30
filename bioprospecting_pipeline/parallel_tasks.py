@@ -251,7 +251,7 @@ def delete_sequences(identity_list):
     return identity_list, elimination_list
 
 @ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db, extension_rna, min_orf_length=300):
+def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db, rna_extension, min_orf_length=300):
     """
     Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
 
