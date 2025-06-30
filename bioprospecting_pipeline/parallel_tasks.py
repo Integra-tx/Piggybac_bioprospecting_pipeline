@@ -371,7 +371,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                             if record.id == ids.split("|")[1]:
                                 formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
                                 trad.write(formatted_id)
-                                rna_fi.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
              # Handle DNA extension and writing to file
