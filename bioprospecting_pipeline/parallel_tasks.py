@@ -525,8 +525,8 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
         if domain_check: 
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
-            # rna_res = rna_extract(accession, rna_sequences[accession])
-            # top_hit['rDNA'] = f"{rna_sequences[0]}: {rna_sequences[1]}"
+            rna_res = rna_extract(accession, rna_sequences[accession])
+            top_hit['rDNA'] = f"{rna_sequences[0]}: {rna_sequences[1]}"
         
             
             species = accession.split('_')
@@ -545,12 +545,12 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
 def rna_extract(accession, sequence):
     # Write sequence to temp FASTA file
 
-    fasta_path = "query.fa"
+    fasta_path = f"query_{accession}.fa"
     with open(fasta_path, "w") as f:
         f.write(f">{accession}\n{sequence}\n")
 
     # Run cmscan
-    tblout_path = "query.tblout"
+    tblout_path = f"query_{accession}.tblout"
     cmscan_cmd = [
         "cmscan",
         "--cut_ga", "--rfam", "--nohmmonly",
