@@ -14,7 +14,7 @@ pipeline_step: 3                         # Pipeline step to run (1, 2, 3, 4, or 
 # Frahmmer settings
 seed: "./extra_files/activePB_seed.hmm"            # Path to the Frahmmer seed
 # seed: "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Tnpb_seed.aln" 
-orf_length: 300                          # Minimum ORF length to be searched (in amino acids)
+orf_length: 200                          # Minimum ORF length to be searched (in amino acids)
 # orf_length: 230
 
 # Palindrome matching settings
@@ -25,7 +25,6 @@ motif2: "GAATT"                           # Second motif (can be optional or set
 
 # Sequence extraction settings
 extension: 4000                          # Length of the flanking DNA regions to be extracted
-rna_extension: 10000
 
 # Clustering options
 full_output: true                        # If true, save the full output from the pipeline
@@ -45,4 +44,3 @@ taxonomy_file: "./extra_files/Taxonomy_clasification_complete.txt" #Taxonomy ref
 colculate_cons: "./extra_files/calculate_cons_for_clustal_50.py" #Cons script
 
 frahmmer_path: "./results/Complete_dde_sequences.fasta" #Cons script 
-
