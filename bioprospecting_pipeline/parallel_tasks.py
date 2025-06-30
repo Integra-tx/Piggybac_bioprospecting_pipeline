@@ -620,7 +620,6 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             if not domain_dicts[0]:
                 domain_check = False
         if domain_check: 
-            print(domain_dicts)
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
             rna_res = rna_extract(accession, rna_dict[accession])
@@ -691,8 +690,7 @@ def parse_blast_xml(xml_path):
 
 def prepare_result(accession, protein_seq, domain_results):
     """Prepares a result dictionary for DataFrame insertion."""
-    print(domain_results)
-    print(protein_seq)
+
     if 'DDE' in domain_results[0]:
         dde_length = domain_results[1]
         for acc_n, acc_e in dde_length.items():
@@ -716,6 +714,7 @@ def prepare_result(accession, protein_seq, domain_results):
             "Transposon": '',
             "CRD_motif": crd_motif,
             "DDE": dde_domain,
+            "rDNA": '',
             "N-term": only_n_term,  
             "No-nterm": no_n_term_seq, 
             "ttaa": '',
