@@ -391,13 +391,13 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     rna_begin = max(begin - rna_extension, 0)
                                     rna_end = min(end + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end]).upper()
-                                    rna_key = formatted_id.strip()
+                                    rna_key = formatted_id.strip().replace('>','')
                                     rna_sequences[rna_key] = rna_seq
                                 elif ids.split("|")[3].strip() == "(-)":
                                     rna_begin = max(end - rna_extension, 0)
                                     rna_end = min(begin + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
-                                    rna_key = formatted_id.strip()
+                                    rna_key = formatted_id.strip().replace('>','')
                                     rna_sequences[rna_key] = rna_seq
             
                                 
