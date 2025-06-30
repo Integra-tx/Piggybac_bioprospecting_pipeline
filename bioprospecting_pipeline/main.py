@@ -1,1667 +1,304 @@
-import ray
 import os
-from fnmatch import fnmatch
-import zipfile
-import pandas as pd
-import gzip
+import sys
+import ray
 import shutil
-import logging
-from Bio.Seq import Seq
-from Bio import SeqIO
-from Bio.Blast import NCBIXML
-import re
-from Bio.Align.Applications import MafftCommandline
-from collections import deque
-import subprocess
-import collections
-import math
+import time
+import pandas as pd
+from parallel_tasks import run_frehmmr, extract_dna, write_fasta_from_dataframe, batch_par, batch_write, run_palindrome, flatten_deep, sequence_cutting, parallel_paths, split_and_distribute
+import yaml
 import gc
 
 
+def load_config():
+    with open('config.yaml', 'r') as config_file:
+        return yaml.safe_load(config_file)
 
-logging.basicConfig(level=logging.INFO)
-
-
-@ray.remote
-def run_frehmmr(my_file, out, path, seed, orf_length):
-    """
-    Function to run Frahmmer against the given genome, additionally it extracts the genomic information from the coordinates
-    obtained from Frahmmer.
-
-    :param my_file: Name of the genome file.
-    :type my_file: str
-    :param out: Output directory.
-    :type out: str
-    :param path: Path to the directory containing the genome file.
-    :type path: str
-    :param seed: Path to the seed file to run frahmmer.
-    :type seed: str
-    :param orf_length: Minimum orf length of matches to be found by frahmmer
-    :type orf_length: str
-
-    :return: Does not return important information
-    """
-    # Set variables for the Frahmmer output file and the alignment file
-    direction = f'{path}/{my_file}'
-    name = my_file.split(".")[0]
-    r = False
-
-    # Check if the genomes are given in a directory
-    if os.path.isdir(direction):
-        pattern = "*.fna"
-        # Iterate through the files in the genome directory and save path for the genome files
-        for path, subdirs, files in os.walk(direction):
-            for access in files:
-                if fnmatch(access, pattern):
-                    r = (os.path.join(path, access))
-                    name = r.split('/')[-1].split('.')[0]
-
-    # Check if the genomes are given as a single file, as zipped files or gz files and save the path of the genome file
-    elif os.path.isfile(direction):
-        r = direction
-
-    elif ".zip" in my_file:
-        # Extract zip file
-        with zipfile.ZipFile(f'{path}/{my_file}') as zf:
-            for genome in zf.namelist():
-                if "ncbi_dataset/data" in genome and ".json" not in genome:
-                    zf.extract(genome, path)
-                    final_genome = genome
-        r = f'{path}/{final_genome}'
-    elif ".gz" in my_file:
-        # Extract gz file
-        final_genome = my_file.replace(".gz", "")
-        with gzip.open(f'{path}/{my_file}', 'rb') as f_in:
-            with open(f'{path}/' + final_genome, 'wb') as f_out:
-                shutil.copyfileobj(f_in, f_out)
-        r = f'{path}/{final_genome}'
-
-
-    # Check if a genome file is found
-    if r:
-        if os.path.exists(f"{out}/Frahmmer_results") is False:
-            os.mkdir(f"{out}/Frahmmer_results")
-        # Run the Frahmmer program
-        os.system(f'frahmmer -o {out}/Frahmmer_results/{name}.out -l {orf_length} --frameline -m {seed} {r}')
-
-    else:
-        logging.info('No genome for ' + name)
-
-def split_and_distribute(lst, chunk_size=20):
-    # Split the list into chunks of size `chunk_size`
-    chunks = [lst[i:i + chunk_size] for i in range(0, len(lst), chunk_size)]
+# Example usage in main:
+def main():
+    config = load_config()
     
-    # If the last chunk is smaller than the chunk size
-    if len(chunks[-1]) < chunk_size:
-        # Get the last small chunk
-        last_chunk = chunks.pop()
-        # Distribute the elements of the last chunk across the remaining chunks
-        for i, elem in enumerate(last_chunk):
-            chunks[i % len(chunks)].append(elem)
+    input_path = config['input_path']
+    output = config['output_path']
+    pipeline_step = config['pipeline_step']
+    seed = config['seed']
+    orf_length = config['orf_length']
+    mistake = config['mistake']
+    itr = config['itr']
+    motif1 = config['motif1']
+    motif2 = config['motif2']
+    extension = config['extension']
+    full_output = config['full_output']
+    ttaa_call = config['ttaa_call']
+    ray_workers = config['ray_workers']
+    taxonomy_file = config['taxonomy_file']
+    cons_file = config['colculate_cons']
+    blast_path = config['blast_path']
+    blast_db = config['blast_db']
+    frahmmer_aa_path = config['frahmmer_path']
     
-    return chunks
 
-def organize_batch(frahmmer_paths):
-    """
-    Organizes a list of Frahmmer paths into batches based on available CPU cores.
+    # Start counting the execution time of the pipeline
+    start_time = time.time()
+    sys.stderr.write("Bioprospecting Pipeline for the recovery of piggyBacs from genomes.\n")
 
-    Args:
-        frahmmer_paths (list): A list of file paths generated by Frahmmer.
-
-    Returns:
-        list: A list of lists, where each sublist represents a batch of file paths
-              that will be assigned to a CPU core.
-
-    Raises:
-        ValueError: If no CPU resources are available.
-    """
-    num_cores = int(ray.cluster_resources()["CPU"])
-    if num_cores == 0:
-        raise ValueError("No CPU resources available.")
-
-    # If fewer paths than cores, use all cores efficiently
-    if len(frahmmer_paths) < num_cores:
-        return [frahmmer_paths]  # Single batch with all files
-
-    # Otherwise, distribute paths across available cores while leaving free cores to not overload the ram
-    if num_cores - 2 > 6:
-        per_core_load = int(len(frahmmer_paths)/(num_cores -2))
-    else:
-        per_core_load = int(len(frahmmer_paths) / (num_cores -1))
-
-    chunks = []
-    temp_list = []
-    for i, path in enumerate(frahmmer_paths, start=1):
-        temp_list.append(path)
-        if i % per_core_load == 0:
-            chunks.append(temp_list)
-            temp_list = []  # Reset the temporary list for the next batch
-
-    # Distribute remaining files evenly across the existing chunks
-    if temp_list:
-        for i, remaining_file in enumerate(temp_list):
-            chunks[i % len(chunks)].append(remaining_file)
-
-    return chunks
+    # Create directories for output
+    if os.path.exists(output) is False:
+    	os.mkdir(output)
 
 
-def parse_sequence(sequence):
-    """
-    Parses a genomic sequence string into species, contig, coordinates, and strand information.
+    input_path = input_path.rstrip("/")
 
-    Args:
-        sequence (str): The sequence string in the format "species|contig|start-end|strand".
-
-    Returns:
-        tuple: A tuple containing species (str), contig (str), start (int), end (int), and strand (str).
-
-    Raises:
-        ValueError: If the sequence string is malformed or missing essential components.
-    """
-    parts = sequence.split('|')
-    if len(parts) < 4:
-        raise ValueError("Invalid sequence format. Expected 'species|contig|start-end|strand' format.")
-
-    species = parts[0]
-    contig = parts[1]
-
-    try:
-        coordinates = parts[2].split('-')
-        start, end = sorted([int(coordinates[0]), int(coordinates[1])])
-    except (IndexError, ValueError):
-        raise ValueError("Invalid coordinates in sequence.")
-
-    strand = parts[-1].strip()  # Remove any newlines or extra spaces from strand
-
-    return species, contig, start, end, strand
+    # Check numeric inputs
+    if not isinstance(mistake, int):
+        if not mistake.isnumeric():
+            raise TypeError("Mistakes are not whole numbers")
+            
+    if not isinstance(itr, int):
+        if not itr.isnumeric():
+            raise TypeError("ITRs are not whole numbers")
+            
+    if not isinstance(extension, int):
+        if not extension.isnumeric():
+            raise TypeError("Extension is not whole numbers")
+            
+    if not isinstance(orf_length, int): 
+        if not orf_length.isnumeric():
+            raise TypeError("Orflength is not whole numbers")
+    
+    mistakes_and_number = f"{mistake},{itr}"
 
 
-def delete_sequences(identity_list):
-    """
-    Removes redundant or overlapping sequences from an identity list.
+    pipeline = int(pipeline_step) if isinstance(pipeline_step, str) and pipeline_step.isnumeric() else pipeline_step
+    if pipeline not in [1, 2, 3, 4, 5]:
+        raise TypeError("Pipeline number must be 1, 2, 3, 4, or 5")
+        
+    complete_taxonomy_dict = {}
+    with open(taxonomy_file, 'r') as file:
+        for line in file:
+            species_name, taxonomy_class = line.split(',', 1)
+            complete_taxonomy_dict[species_name] = taxonomy_class.strip()
 
-    This function compares sequences based on species, contig, and coordinates, and
-    eliminates or merges overlapping sequences. It also handles cases where sequences
-    are identical in content but represented differently.
+    # Pipeline steps involving Frahmmer or genome extraction
+    if pipeline in [1, 3, 4]:
+        if os.path.isdir(input_path):
+            if os.path.isdir(output):
+                # Create empty files for output
+                #create_directories(f'{output}/General_results/Frahmmer_results', individual=True)
 
-    Args:
-        identity_list (list): A list of sequences, each formatted as 'species|contig|start-end|strand'.
+                # Index all genomes inside the input path
+                file_list = os.listdir(input_path)
+                ray.init()
 
-    Returns:
-        tuple: A tuple containing:
-            - identity_list (list): The updated list with non-redundant sequences.
-            - elimination_list (set): A set of sequences that were removed.
-    """
-    elimination_list = set()
-    special_list = set()
-    # Compare each pair of sequences
-    for i in range(len(identity_list)):
-        for j in range(i + 1, len(identity_list)):
-            if identity_list[i].split('|') == identity_list[j].split('|'):
-                special_list.add(i)
-            else:
-                # Parse sequences
-                species1, contig1, start1, end1, strand1 = parse_sequence(identity_list[i])
-                species2, contig2, start2, end2, strand2 = parse_sequence(identity_list[j])
-
-                range_limit = 1000 # Range limit for considering proximity as overlap
-
-                # Check if species and contig match
-                if species1 == species2 and contig1 == contig2:
-                    # Check for overlap or proximity within range
-                    if start1 > start2:
-                        overlap = not (end1 < start2 or start1 > end2)
-                    else:
-                        overlap = not (end2 < start1 or start2 > end1)
-
-                    within_range = abs(start1 - start2) <= range_limit or abs(end1 - end2) <= range_limit
-
-                    # Merge sequences if overlap or proximity is found
-                    if overlap or within_range:
-                        if strand1 == strand2:
-                            comparison_list = [start1, end1, start2, end2]
-
-                            begin = min(comparison_list)
-                            end = max(comparison_list)
-
-                            if strand1 == '(-)\n':
-                                begin1 = end
-                                end1 = begin
-                                begin = begin1
-                                end = end1
-
-                            merged_sequence = f"{species1}|{contig1}|{begin}-{end}|{strand1}\n"
-                            identity_list.append(merged_sequence)
-                            elimination_list.add(identity_list[i])
-                            elimination_list.add(identity_list[j])
-
-    # Handle special list cases
-    if special_list:
-        for special in special_list:
-            if special in identity_list:
-                identity_list = [value for value in identity_list if value != special]
-                identity_list.append(special)
-
-
-    identity_list = [seq for seq in identity_list if seq not in elimination_list]
-
-
-    identity_list = list(set(identity_list))
-
-    return identity_list, elimination_list
-
-@ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db,min_orf_length=300):
-    """
-    Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
-
-    This function parses the Frahmmer output to extract sequences and their surrounding regions (flanking DNA)
-    from genome files. It writes the extracted DNA and amino acid sequences to specified output files.
-
-    Args:
-        out_in (str): Path to the Frahmmer output file.
-        name (str): Name corresponding to the species analyzed by Frahmmer.
-        genome_paths (list or str): List of genome paths or a single genome path where the sequence is found.
-        extension (int): Size of the flanking regions (upstream/downstream) to be extracted with each Frahmmer hit.
-        out (str): Path to the output folder.
-
-    Returns:
-        None: Returns None
-
-    Raises:
-        ValueError: If required genome files are not found.
-        FileNotFoundError: If Frahmmer output or genome files are missing.
-    """
-    identity_list = []
-    location, species_name, complete_string, positive, final_path = "", "", "", "", ""
-    check_count = False
-    in_path = f'{out}/Frahmmer_results/{out_in}'
-    # Check if Frahmmer output file exists and process the output
-    if not os.path.isfile(in_path):
-        raise FileNotFoundError(f"Frahmmer output file not found: {out_in}")
-
-
-    with open(in_path, "r") as name_search:
-        for line in name_search:
-            line = line.strip()
-
-            if 'target sequence database:' in line:
-                genome_name = line.split('/')[-1]
-                genome_name = genome_name.split('_')[0] + '_' + genome_name.split('_')[
-                    1] if 'data_genomes' not in line else genome_name
-
-            if ">>" in line:
-                if location and species_name and begin != "?":
-                    identity_list.append(f">{species_name}|{location}|{begin}-{end}|({positive})\n")
+                # Run Frahmmer if needed
+                if pipeline != 4:
+                    sys.stderr.write("Running BATH\n")
+                    batched_id = batch_par(file_list)
                     
-                if "MAG TPA_asm:" in line:
-                    location, species_name = line.split(" ")[1], "_".join(line.split(" ")[5:7])
-                    species_name = species_name.replace('[','').replace(']','')
-                elif "TPA_" in line or 'MAG:' in line:
-                    location, species_name = line.split(" ")[1], "_".join(line.split(" ")[4:6])
-                    species_name = species_name.replace('[','').replace(']','')
+                    for chunk in batched_id:
+                        batch_write(file_list, extension, output, chunk, input_path, 1, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db)
+                    sys.stderr.write('BATH Finished\n')
+
+                if len(file_list) == 1 and os.path.isfile(input_path + '/' + file_list[0]):
+                    genome_paths = input_path + '/' + file_list[0]
                 else:
-                    location, species_name = line.split(" ")[1], "_".join(line.split(" ")[3:5])
-                    species_name = species_name.replace('[','').replace(']','')
-                complete_string = ""
+                    # Parallelize the retrieval of all the genome paths and save them in a list
+                    genome_paths = parallel_paths(file_list, 'genome', input_path, output)
 
-            if "!" in line:
-                tokens = [t for t in line.split(" ") if any(c.isdigit() for c in t)]
-                begin, end = int(tokens[5]), int(tokens[6])
+                # Run DNA extraction
+                sys.stderr.write('Starting DNA extraction\n')                
+              
 
-            if "?" in line:
-                begin = "?"
-
-            if "FRAME" in line:
-                positive = "+" if "-" not in line else "-"
-
-
-
-        extension_dfam =  False
-
-        # Find the genome path for the corresponding genome analyzed by frahmmer
-        if type(genome_paths) == list:
-            for x in genome_paths:
-                if len(x) == 1:
-                    if genome_name in x[0]:
-                        final_path = str(x[0])        
-                else:
-                    for extra_path in x:
-                        if genome_name in extra_path:
-                            final_path = str(extra_path)
-
-        else:
-            final_path = genome_paths
-            extension_dfam = True
-
-        # Find genome path for the current genome being analyzed
-        if not final_path:
-            raise ValueError(f"Genome path not found for {genome_name}")
-
-        dna_filename = f'{name.replace(".out","")}_extended_dna.fa'
-
-
-
-        identity_list = set(identity_list)
-        identity_list = list(identity_list)
-
-
-        while True:
-            delete_result = delete_sequences(identity_list)
-            identity_list = delete_result[0]
-            if not delete_result[1] or delete_result[1] == set():
-                break
-
-
-        run_check = True
-        if len(identity_list) > 0:
-            if check_count:
-                if int(check_count) == int(len(identity_list)):
-                    run_check = False
-                else:
-                    print(out_in + ' ' + str(check_count) + ' ' + str(len(identity_list)))
-
-            if run_check:
-                with open(dna_filename, 'w') as trad:
-                    count = 0
-                    for record in SeqIO.parse(f"{final_path}", "fasta"):
-                        count += 1
-                        for ids in identity_list:
-                            if record.id == ids.split("|")[1]:
-                                formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
-                                trad.write(formatted_id)
-                                begin = int(ids.split("|")[2].split("-")[0])
-                                end = int(ids.split("|")[2].split("-")[1])
-                                if "+" in ids:
-                                    if (begin - extension) < 0:
-                                        trad_begin = 0
-                                    else:
-                                        trad_begin = begin - extension
-                                    if (end + extension) > len(record.seq):
-                                        trad_end = len(record.seq)
-                                    else:
-                                        trad_end = end + extension
-                                    trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
-                                elif ids.split("|")[3].strip() == "(-)":
-                                    if (end - extension) < 0:
-                                        trad_begin = 0
-                                    else:
-                                        trad_begin = end - extension
-                                    if (begin + extension) > len(record.seq):
-                                        trad_end = len(record.seq)
-                                    else:
-                                        trad_end = begin + extension
-                                    trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
-		    
-
-        try:
-            os.path.isfile(dna_filename)
-            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
-            os.remove(dna_filename)
-            print(f"Finished with {genome_name}")
-            return pre_cluster_dataframe
-        except:
-            with open('Genomes_without_hits.txt','a') as empty_file:
-                empty_file.write('dna_filename\n')
-            return None
-
-@ray.remote
-def genome_reader(combined_data):
-    count_hits = 0
-    if os.path.isfile(combined_data):
-        with open(combined_data, "r") as name_search:
-            for i in name_search:
-                if "!" in i:
-                    count_hits += 1
-    return((combined_data, count_hits))
-
-
-
-def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db):
-    parse = []
-    for i in chunks:
-        if type == 1:
-            parse.append(run_frehmmr.remote(i, output, input_1, seed, orf_length))
-        elif type == 2:
-            name = i
-            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,orf_length))
-        elif type == 3:
-            parse.append(genome_reader.remote(i))
-    newlist = ray.get(parse)
-    if type == 3 or type == 2:
-        newlist = [x for x in newlist if x is not None]
-        if type == 2:
-            return newlist
-        else:
-            return newlist
-    else:
-        del newlist
-        
-        
-
-    
-def orf_finder(file_name, complete_taxonomy_dict, min_orf_length=300, blast_path=None, blast_db=None, evalue=0.001):
-    """
-    Identifies ORFs in DNA sequences and performs domain analysis.
-    
-    :param file_name: Path to the FASTA file with DNA sequences.
-    :param df: DataFrame to append results.
-    :param min_orf_length: Minimum ORF length in amino acids (default: 300).
-    :param blast_path: Path to the BLAST executable (default: None).
-    :param blast_db: Path to the BLAST database (default: None).
-    :param evalue: E-value threshold for BLAST (default: 0.001).
-    :return: Updated DataFrame with ORF and domain analysis results.
-    """
-
-    results = []
-
-    # Validate BLAST paths
-    if not blast_path or not blast_db:
-        raise ValueError("BLAST executable path and database path must be provided.")
-
-    for record in SeqIO.parse(file_name, "fasta"):
-        accession = record.id
-        sequence = str(record.seq).upper()
-        orfs = extract_orfs(sequence, min_orf_length, accession, blast_path, blast_db, complete_taxonomy_dict)
-        if orfs:
-            results.append(orfs)
-        
-    
-    # Update DataFrame with results
-    return results
-
-def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete_taxonomy_dict):
-    """Extracts ORFs from a DNA sequence."""
-    orfs = {}
-    translated_seq_set = set()
-    repeated_check = False
-    for strand, seq in [(+1, sequence), (-1, Seq(sequence).reverse_complement())]:
-        dna = str(seq).upper()
-        my_list = [0, 1, 2]
-    
-        for frame_index in my_list:
-            for codon_index in range(frame_index, len(dna), 3):
-                codon1 = dna[codon_index:codon_index + 3]
-                if codon1 == 'ATG':
-                    position1 = codon_index
-                    for stop_codon_index in range(position1, len(dna), 3):
-                        codon2 = dna[stop_codon_index:stop_codon_index + 3]
-                        if codon2 in ['TAA', 'TAG', 'TGA']:
-                            position2 = stop_codon_index
-                            if len(dna[position1:position2 + 3]) > 750:
-                                translated_seq = str(Seq(dna[position1:position2 + 3]).translate())
-                                for fract in translated_seq_set:
-                                    if translated_seq in fract:
-                                        repeated_check = True
-                                        break
-                                if not repeated_check:
-                                    translated_seq_set.add(translated_seq)
-                                    orfs[translated_seq] = (position1, position2 + 3, strand)
-                                repeated_check = False
-                                break
-                            else:
-                                repeated_check = False
-                                break
-        
-        
-    orf_length = []
-    domain_dicts = []
-    for i,j in orfs.items():
-        if i in translated_seq_set:
-            domain_results = analyze_domains(i, accession, blast_path, blast_db, 0.001)
-            if domain_results:
-                new_dicts = prepare_result(accession, i, domain_results)
-                domain_dicts.append(new_dicts)
-    if domain_dicts:
-        domain_check = True
-        if len(domain_dicts) == 1:
-            if not domain_dicts[0]:
-                domain_check = False
-        if domain_check: 
-            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-            top_hit['Full_dna'] = sequence
-        
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
-            top_hit['Full_dna'] = sequence
-        
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
-    else:
-        return None
-
-
-
-
-def parse_blast_xml(xml_path):
-    """Parses BLAST XML output for domain hits."""
-    hits_dict = {}
-    for record in NCBIXML.parse(open(xml_path)):
-        if record.alignments:
-            query = record.query
-            small_dict = {}
-            for align in record.alignments:
-                for hsp in align.hsps:
-                    if 'zinc-ribbon' in align.hit_def or 'zf-ribbon' in align.hit_def or 'ZF_C2H2' in align.hit_def or 'PHD' in align.hit_def or 'zf-' in align.hit_def or 'zinc finger' in align.hit_def or 'C1 domain' in align.hit_def or 'C-terminal domain' in align.hit_def:
-                        domain = 'Zinc finger'
-                        hit_location = (hsp.query_start, hsp.query_end)
-                        small_dict[domain] = hit_location
-                    elif 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
-                        domain = 'DDE'
-                        hit_location = (hsp.query_start, hsp.query_end)
-                        small_dict[domain] = hit_location
-                        if query not in hits_dict:
-                            hits_dict[query] = str(hsp.query_start) + '-' + str(hsp.query_end)
-                        else:
-                            smallest = []
-                            biggest = []
-                            smallest.append(int(hits_dict[query].split('-')[0]))
-                            smallest.append(hsp.query_start)
-                            biggest.append(int(hits_dict[query].split('-')[1]))
-                            biggest.append(hsp.query_end)
-                            begin = min(smallest)
-                            end = max(biggest)
-                            hits_dict[query] = str(begin) + '-' + str(end)
-                    elif 'Family of unknown function' in align.hit_def or 'Domain of unknown function' in align.hit_def:
-                        term_a = False
-                    else:
-                        if 'polymerase' in align.hit_def.lower() and 'subunit' in align.hit_def.lower() and 'gamma' in align.hit_def.lower() and 'tau' in align.hit_def.lower():
-                            domain = 'DNA polymerase III subunit gamma/tau'
-                        elif '.' in str(align.hit_def).split(',')[2]:
-                            domain = str(align.hit_def).split(',')[2].split('.')[0]
-                        else:
-                            domain = str(align.hit_def).split(',')[2]
-                        
-                        hit_location = (hsp.query_start, hsp.query_end)
-                        small_dict[domain] = hit_location
-
-            if small_dict:
-                return small_dict, hits_dict
-
-
-def prepare_result(accession, protein_seq, domain_results):
-    """Prepares a result dictionary for DataFrame insertion."""
-
-    if 'DDE' in domain_results[0]:
-        dde_length = domain_results[1]
-        for acc_n, acc_e in dde_length.items():
-            n_term = int(acc_e.split('-')[0])
-            dde_end = int(acc_e.split('-')[-1])
-        matched_sequences, unmatched_sequences = search_motifs(protein_seq, primary_motifs, secondary_motifs) 
-        if matched_sequences:
-            crd_motif = matched_sequences[0][1]
-        else:
-            crd_motif = 'None'
-        complete_domains = sorted(domain_results[0].items(), key=lambda x: x[1])
-        domains_str = ",".join(f"{name}{loc}" for name, loc in complete_domains)
-        no_n_term_seq = protein_seq[n_term:]
-        dde_domain = protein_seq[n_term:dde_end] 
-        only_n_term = protein_seq[:n_term]
-        
-        return {
-            "Accession": accession,
-            "Taxonomy": '',
-            "Transposase": protein_seq,
-            "Transposon": '',
-            "CRD_motif": crd_motif,
-            "DDE": dde_domain,
-            "N-term": only_n_term,  
-            "No-nterm": no_n_term_seq, 
-            "ttaa": '',
-            "N_palindromes": '',
-            "palindromes": '',
-            "SG": '',
-            "Domains": domains_str,
-            "Clustered": '',
-            "Full_dna":''
-        }
-
-primary_motifs = {
-    'C5HCH': r'C.{2}C.{7,15}C.{2}C.{2,4}C.{2}H.{1,11}C.{2,4}H',
-    'HC6H': r'H.{9,31}C.{2,4}C.{7,42}C.{1,4}C.{4,13}C.{1,9}C.{3,4}H',
-    'C5HC2': r'C.{2,4}C.{7,24}C.{1,2}C.{4}C.{2,3}H.{4,11}C.{0,4}C',
-    'HC4HCH': r'H.{9,33}C.{2}C.{7,16}C.{2}C.{4,17}H.{1,3}C.{3,5}H',
-    'HCHC4H': r'H.{11}C.{2}H.{13}C.{2}C.{4}C.{3}C.{4}H',
-    'C4HCHC': r'C.{2}C.{12,18}C.{2}C.{4}H.{2}C.{3}H.{1,3}C',
-    'HC6H_alt': r'H.{10}C.{1}C.{1}C.{7}C.{2}C.{7}C.{4}H',
-    'HC5H2': r'H.{17}C.{2}C.{12}C.{2}C.{6}C.{3}H.{4}H',
-    'HCHC4H': r'H.{10,27}C.{2,3}H.{6,9}C.{1,2}C.{4,6}C.{2,3}C.{3,4}H',
-    'C8': r'C.{2,5}C.{7,11}C.{2}C.{4}C.{2}C.{4,11}C.{2}C',
-    'C7H': r'C.{2}C.{14}C.{2}C.{6}C.{11}C.{2}C.{3}H',
-    'C7H_alt': r'C.{22}C.{2}C.{7}C.{2}C.{4}C.{6}C.{4}H',
-    'CHC6': r'C.{4}H.{7}C.{2}C.{4}C.{2}C.{9}C.{2}C',
-    'C6H2': r'C.{2}C.{7}C.{2}C.{4}C.{7}C.{3}H.{3}H',
-    'CHC4H2': r'C.{2}H.{13}C.{2}C.{4}C.{3}C.{0}H.{3}H'
-}
-
-
-
-secondary_motifs = {
-    'HC6': r'H.{9,29}C.{2,4}C.{7,29}C.{1,2}C.{4,8}C.{2,6}C',
-    'C4HC2': r'C.{2}C.{11}C.{7}C.{2}H.{4}C.{2}C',
-    'C5H2': r'C.{2}C.{24}C.{2}C.{4}C.{2}H.{4}H',
-    'C5HC': r'C.{2}C.{11}C.{2}C.{4}C.{2}H.{4}C',
-    'C3HC3': r'C.{2}C.{13}C.{2}H.{4}C.{12}C.{6}C',
-    'HC5': r'H.{9,17}C.{2}C.{8,13}C.{2,7}C.{6}C',
-    'C6H': r'C.{2,4}C.{7,13}C.{2}C.{4,6}C.{2,6}C.{3,4}H',
-    'HC5H': r'H.{10,19}C.{2}C.{12,18}C.{2,7}C.{3,10}C.{4,11}H',
-    'HC4HC': r'H.{12}C.{2}C.{12}C.{2}C.{4}H.{2}C',
-    'C7': r'C.{2}C.{7,8}C.{2}C.{4}C.{7}C.{2}C',
-}
-
-# Function to search for motifs in sequences and extract the matched subsequences + motif format
-def search_motifs(sequences, motifs, secondary_motifs):
-    matched_sequences = []
-    unmatched_sequences = []
-    
-    
-    sequence = str(sequences.replace('*',''))
-    match_found = False
-    match_found_second = False
-    
-    # First search: Check for primary motifs
-    for motif_name, motif_pattern in motifs.items():
-        match = re.search(motif_pattern, sequence)
-        if match:
-            # Generate the motif format from the gaps
-            motif_format = []
-            # Loop through the groups and build the motif format
-            for i in range(1, len(match.groups()), 2):
-                residue = match.group(i)
-                gap = match.group(i + 1)
-                motif_format.append(f"{residue}-{len(gap)}X")
-            
-            # Join the motif format into a string like H-10X-C-2X-C-8X-...
-            motif_format_str = "-".join(motif_format)
-            
-            matched_sequences.append(('1', motif_name, match.group()))  
-            match_found = True
-            break  # Stop searching once a match is found
-            
-    
-    # If no primary match found, add to unmatched sequences
-    if not match_found:
-        for motif_name, motif_pattern in secondary_motifs.items():
-            match = re.search(motif_pattern, sequence)
-            if match:
-                # Generate the motif format from the gaps
-                motif_format = []
-                for i in range(1, len(match.groups()), 2):
-                    residue = match.group(i)
-                    gap = match.group(i + 1)
-                    motif_format.append(f"{residue}-{len(gap)}X")
+                # Sort and process genome reader
                 
-                # Join the motif format into a string like H-10X-C-2X-C-8X-...
-                motif_format_str = "-".join(motif_format)
+                frahmmer_list = [x for x in os.listdir(f"{output}/Frahmmer_results")]
+                batch_list = batch_par(frahmmer_list)
+                dataframe_pre_clustering = []
+                for chunk in batch_list:
+                    temporal_dataframe = batch_write(genome_paths, extension, output, chunk, input_path, 2, seed, orf_length, complete_taxonomy_dict, blast_path, blast_db)
+                    dataframe_pre_clustering.append(temporal_dataframe)
+
+                                    # Define the column names for the DataFrame
+                columns = ["Accession", "Taxonomy", "Transposase", "Transposon", "CRD_motif", "DDE", "N-term", "No-nterm", "ttaa", "N_palindromes","palindromes", "SG", "Domains", "Clustered", "Full_dna"]
+                flattened_list = flatten_deep(dataframe_pre_clustering)
+                final_pre_clustering_dataframe = pd.DataFrame(flattened_list, columns=columns)
+                final_pre_clustering_dataframe.to_csv(f'{output}/Pre_filtering_complete_data.tsv', sep='\t', index=False)
                 
-                matched_sequences.append(('1', motif_name, match.group()))  # Store motif name, matched subsequence, and the motif format
-                match_found_second = True
-                break
-        if not match_found_second:
-            unmatched_sequences.append('1')
-
-    return matched_sequences, unmatched_sequences
-
-@ray.remote
-def run_palindrome(accession1, mistakes, sequence):
-    """
-    Function that runs the 'palindrome' program to find palindromic sequences (inverted repeats) in a combined sequence
-    generated from the dictionaries of left and right matches.
-
-    :param left_dictionary: A dictionary containing the matches found on the left side of the motif.
-    :type left_dictionary: dict(str, tuple(int, int))
-    :param right_dictionary: A dictionary containing the matches found on the right side of the motif.
-    :type right_dictionary: dict(str, tuple(int, int))
-    :param file: The name of the file to be used as input for the 'palindrome' program.
-    :type file: str
-    :param temporal_file: The name of the temporal file to store the output of the 'palindrome' program.
-    :type temporal_file: str
-    :param accession1: The accession identifier for the sequence.
-    :type accession1: str
-    :param mistakes: The maximum number of mismatches allowed for a palindrome.
-    :type mistakes: str
-
-    :return: A dictionary containing the palindromic sequences found, with the keys as tuples representing the original
-    left and right matches, and the values as lists of palindromic sequences.
-    :rtype: dict(tuple(str, str), list(str))
-    """
-    # Dictionary to store palindromic sequences
-    itr_dictionary = {}
-
-    l = sequence[:150]
-    h = sequence[len(sequence) - 200:]
-
-    combined_itr = str(sequence[:150]) + " " + str(sequence[len(sequence) - 200:])
-    combined_length = len(sequence[:150]) + len(sequence[len(sequence) - 200:])
-
-    # Generate input file for the 'palindrome' program
-    temporal_file_name = f'Temporal_palindrome_{accession1}.fasta'
-    with open(temporal_file_name, "w") as temporal:
-        temporal.write(">" + accession1 + "\n" + combined_itr)
+                write_fasta_from_dataframe(final_pre_clustering_dataframe, sequence_col="DDE", name_col="Accession", output_file=f"{output}/Complete_dde_sequences.fasta")
+                sys.stderr.write('Finished DNA extraction\n')
 
 
-    temporal_palindrome_name = f'Palindrome_result_{accession1}.txt'
-    temporal_palindrome_name = temporal_palindrome_name.strip().replace("$","").replace("'","")
-    # Run the 'palindrome' program
-    command = ['palindrome', '-sequence', temporal_file_name, '-minpallen', '10', '-maxpallen', '100', '-gaplimit',
-               str(combined_length), '-nummismatches', str(mistakes), '-outfile', temporal_palindrome_name, '-overlap',
-               'no']
-    # Execute the palindrome command and capture the output
-    result = subprocess.run(command, capture_output=True, text=True)
-
-
-    # Read the output file from the 'palindrome' program
-    with open(temporal_palindrome_name, "r") as temporal_line:
-        counting = 0
-        count2 = 0
-        itr_list = []
-        itr_check = 0
-        internal_check = 0
-
-        # Iterate over each line in the output file
-        for lines in temporal_line:
-            # Filter out irrelevant lines
-            if ":" not in lines and (bool(re.search(r'\d', lines))) is True and "|" not in lines:
-                lines = lines.strip()
-                counting += 1
-                left_check = 0
-                right_check = 0
-                if count2 % 2 == 0:
-                    # Extract the palindrome positions and sequence for the 5' end
-                    left_number_match = re.findall(r'\d+', lines)
-
-                    seq_5 = str(re.sub(r'[^a-zA-Z]', '', lines))
-                    mon = collections.Counter(seq_5).most_common(2)
-
-                    if len(mon) > 1:
-                        if mon[0][1] / len(seq_5) < 0.8:
-                            if ((mon[0][1] / len(seq_5)) + (mon[1][1] / len(seq_5))) < 0.8:
-                                itr_check = 1
-                                internal_check = 1
-                    else:
-                        if mon[0][1] / len(seq_5) < 0.8:
-                            itr_check = 1
-                            internal_check = 1
-                else:
-                    if internal_check == 1:
-                        right_number_match = re.findall(r'\d+', lines)
-                        for same in left_number_match:
-                            if int(same) > len(l):
-                                left_check = 1
-                        for same in right_number_match:
-                            if int(same) < len(l):
-                                right_check = 1
-                        # Extract the palindrome positions and sequence for the 3' end
-                        seq_3 = str(re.sub(r'[^a-zA-Z]', '', lines))
-                        if left_check == 0 and right_check == 0:
-                            itr_list.append(seq_5 + "-" + seq_3[::-1])
-
-                    internal_check = 0
-                    left_check = 0
-                    right_check = 0
-                count2 += 1
-
-        # If at least one palindrome is found, add it to the dictionary
-        if itr_check == 1:
-            itr_dictionary[(str(l), str(h))] = itr_list
-
-    values = list(itr_dictionary.keys())
-
-    # List where similar tuples will be stored
-    similar_tuples = []
-    for i in range(len(values)):
-        for j in range(i + 1, len(values)):
-            tuple_i = values[i]
-            tuple_j = values[j]
-
-            # Check if the lengths of tuple_i and tuple_j are the same
-            if len(tuple_i) == len(tuple_j):
-                similarity_ratios = []
-
-                # Iterate over each element in tuple_i and tuple_j
-                for k in range(len(tuple_i)):
-                    match_count = sum(a == b for a, b in zip(tuple_i[k], tuple_j[k]))
-                    min_length = min(len(tuple_i[k]), len(tuple_j[k]))
-
-                    identity = (match_count / min_length) * 100
-
-                # If the identity is greater than or equal to 0.95, add tuple_j to similar_tuples
-                tuple_to = 0
-
-                if identity >= 0.95:
-                    if tuple_i[0] == tuple_j[0]:
-                        if len(tuple_j[1]) < len(tuple_i[1]):
-                            tuple_to = tuple_j
-                        else:
-                            tuple_to = tuple_i
-                    else:
-                        if tuple_i[0] in tuple_j[0]:
-                            tuple_to = tuple_i
-                        elif tuple_j[0] in tuple_i[0]:
-                            tuple_to = tuple_j
-                    if tuple_to != 0:
-                        similar_tuples.append(tuple_to)
-
-    os.remove(temporal_palindrome_name)
-    try:
-        os.remove(temporal_file_name)
-    except:
-        print(accession1)
-        print(combined_itr)
-        print(sequence)
-        os.remove(temporal_file_name)
-    
-    keys_to_remove = []
-
-    if itr_dictionary:
-
-        for key, value in itr_dictionary.items():
-            if key in similar_tuples:
-                keys_to_remove.append(key)
-
-        for key in keys_to_remove:
-            del itr_dictionary[key]
-        itr_results = sg_and_palindromes(itr_dictionary, accession1, sequence)
-        return itr_results
-    else:
-        return None
-        
-def position_looper_unique(motif, seq, small_sequence):
-    """
-    Function that loops through a sequence, replacing two positions at a time with dots (to allow any letter in those
-    positions), and passes each combination to the function `matcher` to find matches.
-
-    :param motif: Sequence to be looped through.
-    :type motif: str
-    :param seq: Complete sequence in which the palindromes are being searched for.
-    :type seq: str
-    :param small_sequence: Sequence in which the motif is searched for.
-    :type small_sequence: str
-
-    :return: A tuple of two dictionaries. The first dictionary contains the matches found on the left side of the motif,
-    and the second dictionary contains the matches found on the right side.
-    :rtype: tuple(dict(str, tuple(int, int)), dict(str, tuple(int, int)))
-    """
-
-
-
-    # Check if the motif is from the left or right side
-    if motif == 'ttaac':
-        side = "L"
-    else:
-        side = "R"
-
-    # Create the dictionaries to be filled
-    left_dictionary = {}
-    right_dictionary = {}
-
-    # Loop through the motif
-    for i in range(len(motif)):
-        # Loop through the motif one position ahead of the initial loop
-        new_string = motif[:i] + '.' + motif[i + 1:]
-
-        # Run the function matcher and extract the results
-        values = matcher(new_string, small_sequence, side, seq)
-
-        # Fill the dictionaries
-        for locations in values:
-            if side == "L":
-                left_dictionary[str(seq[locations[0]:locations[1]])] = (locations[0], locations[1])
             else:
-                right_dictionary[str(seq[locations[0]:locations[1]])] = (locations[0], locations[1])
-    if side == 'L':
-        new_string = 'aattc'
-    else:
-        new_string = 'gaatt'
-    values = matcher(new_string, small_sequence, side, seq)
-
-    # Fill the dictionaries
-    for locations in values:
-        if side == "L":
-            left_dictionary[str(seq[locations[0]:locations[1]])] = (locations[0], locations[1])
+                raise TypeError("Output path is not a directory")
         else:
+            raise TypeError("Input path is not a directory")
 
-            right_dictionary[str(seq[locations[0]:locations[1]])] = (locations[0], locations[1])
-    return left_dictionary, right_dictionary
+    # Analyze Frahmmer output
+    if pipeline != 1:
+        
+        location = frahmmer_aa_path if pipeline == 2 else f"{output}/Complete_dde_sequences.fasta"
 
-def write_fasta_from_dataframe(df, sequence_col, name_col, output_file):
-    """
-    Writes sequences from a DataFrame to a FASTA file.
-    
-    :param df: DataFrame containing sequences and names.
-    :param sequence_col: Name of the column containing sequences.
-    :param name_col: Name of the column containing sequence names.
-    :param output_file: Path to the output FASTA file.
-    """
-    with open(output_file, 'w') as fasta_file:
-        for _, row in df.iterrows():
-            name = row[name_col]
-            sequence = row[sequence_col]
-            # Ensure valid FASTA format
-            if pd.notnull(name) and pd.notnull(sequence):
-                fasta_file.write(f">{name}\n{sequence}\n")
-
-def analyze_domains(protein_seq, accession, blast_path, blast_db, evalue):
-    """Runs BLAST domain analysis for a given protein sequence."""
-    temp_fasta = f"Temporary_seq_{accession}.fasta"
-    temp_xml = f"Temp_seq_{accession}.xml"
-    
-    # Write protein sequence to temporary FASTA file
-    with open(temp_fasta, 'w') as f:
-        f.write(f">{accession}\n{protein_seq[:-1]}\n")
-    
-    # Run BLAST
-    blast_command = (
-        f"{blast_path} -query {temp_fasta} -db {blast_db} -evalue {evalue} "
-        f"-outfmt 5 -out {temp_xml}"
-    )
-    os.system(blast_command)
-    
-    # Parse BLAST results
-    domain_results = parse_blast_xml(temp_xml)
-    
-    # Cleanup temporary files
-    os.remove(temp_fasta)
-    os.remove(temp_xml)
-    
-    return domain_results
-
-
-
-
-def sequence_numbering(centroid, number_of_sequences, input_name):
-
-    with open(input_name, 'r') as alignment:
-         clustal_alignment = alignment.read()
-
-    # Process the Clustal alignment using regular expressions
-    pattern = re.compile(r'(\S+)\s+([A-Za-z-]+)')
-
-    # Split the text into lines and process each line
-    lines = clustal_alignment.split('\n')
-    amino_dict = {}
-    amino_set = set()
-    count = 0
-    check = 0
-
-    output_name = f'{centroid}_numbered.aln'
-
-    with open(output_name, 'w') as numbered:
-        numbered.write('CLUSTAL X (1.81) multiple sequence alignmentn\n\n\n')
-        for line in lines:
-            # Extract information from the current line
-            match = pattern.match(line)
-            if check == 1:
-                numbered.write(line + '\n\n')
-                count = 0
-                check = 0
-            if match:
-                accession = match.group(1)
-                if 'CLUSTAL' not in accession:
-                    count += 1
-                    if accession not in amino_set:
-                        amino_set.add(accession)
-                        amino_dict[accession] = 0
-                    sequence = match.group(2)
-                    sequence_count = amino_dict[accession]
-                    sequence_number = len(sequence) - str(sequence).count('-') + sequence_count
-                    numbered.write(line + f' {sequence_number}\n')
-                    amino_dict[accession] = sequence_number
-            if count == number_of_sequences:
-                check = 1
-    return output_name
-
-def run_consensus_script(cons_file, mafft_out, name):
-    """Run the consensus script and handle errors."""
-    try:
-        os.system(f"python3 {cons_file} {mafft_out}")
-    except Exception as e:
-        print(f"Error running consensus script for {name}: {e}")
-        raise
-
-
-def extract_consensus_sequence(mafft_out, count_of_lines):
-    """Extract the consensus sequence from the alignment file."""
-    consensus_seq = ''
-    consensus_count = 0
-    name_alt = "_plusCONS.aln"
-    cons_file_path = f"{mafft_out.replace('.aln', '')}{name_alt}"
-
-    try:
-        with open(cons_file_path, 'r') as alignment:
-            for line in alignment:
-                if consensus_count == count_of_lines - 1:
-                    short_consensus = line.split(' ')[0]
-                if consensus_count == count_of_lines:
-                    consensus_count = 0
-                    consensus_seq += line[91:].replace('\n', '')
-                elif '_' in line:
-                    consensus_count += 1
-    except FileNotFoundError:
-        print(f"Consensus file not found: {cons_file_path}")
-        raise
-    except Exception as e:
-        print(f"Error reading consensus file: {e}")
-        raise
-
-    return consensus_seq
-
-
-def process_alignment_file(mafft_out):
-    """Process the alignment file and extract sequence data."""
-    try:
-        with open(mafft_out, 'r') as alignment:
-            clustal_alignment = alignment.read()
-    except FileNotFoundError:
-        print(f"Alignment file not found: {mafft_out}")
-        raise
-    except Exception as e:
-        print(f"Error reading alignment file: {e}")
-        raise
-
-    # Extract matches using regex
-    pattern = re.compile(r'([A-Za-z]\S+)\s+([A-Za-z-]+)\s+(\d+)')
-    matches = [match for match in re.findall(pattern, clustal_alignment) if "alignment" not in match[1]]
-    del clustal_alignment  # Cleanup
-
-    return matches
-
-
-def create_alignment_dataframe(matches, count_of_lines):
-    """Create a DataFrame from the alignment matches."""
-    alignment_data = {'Accession': [], 'Alignment_Position': [], 'Sequence_position': []}
-    triple_count = -1
-    big_count = 0
-    current_dict = {}
-    size_count = True
-    sequence_length = None
-
-    for accession, sequence, position in matches:
-        triple_count += 1
-        if triple_count == count_of_lines:
-            big_count += 1
-            triple_count = 0
-
-        if size_count:
-            sequence_length = len(sequence)
-            size_count = False
-
-        gap_count = int(str(sequence).count('-'))
-        alt_position_count = 0
-        position_count = 0
-
-        for pos, residue in enumerate(sequence):
-            position_count += 1
-            alignment_position = position_count + (big_count * sequence_length)
-            alignment_data['Accession'].append(accession)
-            alignment_data['Alignment_Position'].append(alignment_position)
-
-            if residue != '-':
-                alt_position_count += 1
-                current_position = int(position) + alt_position_count - (sequence_length - gap_count)
-                if accession in current_dict and current_position - current_dict[accession] > 1:
-                    current_position = current_dict[accession] + 1
-                current_dict[accession] = current_position
-                alignment_data['Sequence_position'].append(current_position)
-            else:
-              if accession in current_dict:
-                gap_position = current_dict[accession]
-                alignment_data['Sequence_position'].append(gap_position)
-              else:
-                alignment_data['Sequence_position'].append(0)
-    # Debug: Check DataFrame structure
-    alignment_temp = pd.DataFrame(alignment_data)
-    return alignment_temp
-
-
-def find_conserved_regions(alignment_df_pivoted):
-    """Identify conserved regions based on consensus sequence."""
-    start_positions = []
-    end_positions = []
-    consecutive_count = 0
-    begin_check = False
-    extra_count = 0
-    extra_count_check = False
-    fifty_count = 0
-    end_check = True
-    last_ten_characters = deque(maxlen=91)
-
-    for position, value in alignment_df_pivoted['Consensus_Seq'].items():
-        if begin_check and value not in {'+', '.', ':'}:
-            fifty_count += 1
-
-        if value == '*':
-            consecutive_count += 1
-            if not begin_check and consecutive_count >= 6:
-                start_positions = [position]
-                begin_check = True
-                consecutive_count = 0
-            elif begin_check:
-                if end_check:
-                    extra_count += 1
-                    if fifty_count >= 30:
-                        if extra_count >= 25:
-                            end_check = False
-                            extra_count_check = True
-                        else:
-                            begin_check = False
-                            fifty_count = 0
-                            extra_count = 0
-
-            if extra_count_check:
-                last_ten_characters.append('*')
-                if consecutive_count >= 6:
-                    count_in_first_ten = list(last_ten_characters)[:20].count('*')
-                    if count_in_first_ten >= 17:
-                        end_positions = [position]
+        # Run clustering with mmseqs
+        if pipeline != 5:
+            sys.stderr.write('Start transposon boundary refining\n')
+            os.system(f"mmseqs easy-cluster {location} clusterRes tmp --min-seq-id 0.8 -c 0.8 --cov-mode 1")
+            # Save clustering results to output folder
+            shutil.move("clusterRes_rep_seq.fasta", f"{output}/cluster_representative_seq.fasta")
+            shutil.move("clusterRes_cluster.tsv", f"{output}/cluster_table.tsv")
+            shutil.move("clusterRes_all_seqs.fasta", f"{output}/cluster_all_seqs.fasta")
+        
+        # Check if the complete analysis is to be run
+        if full_output:
+            full = 1
         else:
-            if value not in {'+', '.', ':'}:
-                consecutive_count = 0
-                last_ten_characters.append('-')
+            full = 0
+            
+        # Create the path for the variable extended in case the whole pipeline is being run
+        if pipeline != 2:
+            extended = output + "/Extended_dna.fasta"
 
-    final_position = position
-    if consecutive_count >= 6:
-        count_in_first_ten = list(last_ten_characters)[:30].count('*')
-        if count_in_first_ten >= 25:
-            end_positions = [final_position]
+        if pipeline != 5:
+            sys.stderr.write('Start sequence alignment\n')
+            # Run the msa function with the results from the clustering
+            complete_sequence_dict = {}
+            with open(f"{output}/cluster_all_seqs.fasta","r") as sequence_file:
+                for line in sequence_file:
+                    if '>' in line:
+                        accession = line.strip()[1:]
+                    else:
+                        sequence_line = line.strip()
+                        if accession not in complete_sequence_dict:
+                            dna_sequence = final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe['Accession'] == accession, 'Full_dna'].values
+                            dna_sequence = dna_sequence[0] if len(dna_sequence) > 0 else ""
+                            complete_sequence_dict[accession] = dna_sequence
 
-    return start_positions, end_positions
-	
-def find_conserved_region_with_scoring(alignment_df_pivoted, 
-                                       initial_window=6,
-                                       window_size=20, 
-                                       start_threshold=0.9, 
-                                       continue_threshold=0.75):
-    """
-    Identify a single conserved region using a sliding score window.
-    
-    Parameters:
-        alignment_df_pivoted: DataFrame with 'Consensus_Seq' column indexed by position
-        window_size: number of positions in sliding window
-        start_threshold: average score needed to begin conserved region
-        continue_threshold: minimum score to continue the region
-        min_region_length: minimum length for the region to be valid
-    
-    Returns:
-        (start_pos, end_pos) of the conserved region, or (None, None) if not found
-    """
-
-    SCORE_MAP = {
-        '*': 1.0,
-        ':': 0.75,
-        '.': 0.5,
-        '+': 0.25,
-        '-': 0.0,
-        ' ': 0.0
-    }
-
-    consensus_seq = alignment_df_pivoted['Consensus_Seq'].tolist()
-    positions = alignment_df_pivoted.index.tolist()
-    
-    
-    region_start = []
-    region_end_final = []
-    region_end = False
-    
-
-    i = 0
-    region_check = False
-    while i <= len(consensus_seq) - initial_window:
-        window = consensus_seq[i:i+initial_window]
-        avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / initial_window
-        if avg_score >= start_threshold:
-            if not region_check:
-                region_start = positions[i]
-                window = consensus_seq[i:i+initial_window + window_size]
-                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
-                if avg_score >= continue_threshold:
-                    region_check = True
-                    i = i + initial_window + window_size -1
-            else:
-                region_end = positions[i]
-                window = consensus_seq[(i -window_size):i ]
-                avg_score = sum(SCORE_MAP.get(char, 0.0) for char in window) / window_size
-                if avg_score >= continue_threshold:
-                    region_end_final = region_end + initial_window
-        i += 1
-
-    if not region_end_final:
-        region_end_final = positions[-1]
-
-
-    region_start = [region_start]
-    region_end = [region_end_final]
-    return region_start, region_end
-
-
-
-
-
-
-
-
-
-
-
-
-def extract_shortened_sequences(final_position_dict, sequence_dict):
-  """Extract shortened sequences based on start and end positions."""
-  shortened_sequences = {}
-  for sequence_id, (start, end) in final_position_dict.items():
-    name_check = sequence_id.strip()
-    try:
-      full_sequence = sequence_dict[name_check]
-      new_start = max(start - 15, 0) if start - 15 >= 0 else start
-      new_end = min(end + 15, len(full_sequence)) if end + 15 <= len(full_sequence) else end
-      shortened_sequence = full_sequence[new_start:new_end + 1]
-      shortened_sequences[sequence_id] = shortened_sequence
-    except KeyError:
-      print(f"Sequence ID {name_check} not found in sequence dictionary.")
-    except Exception as e:
-      print(f"Error processing sequence {name_check}: {e}")
-
-  return shortened_sequences
-
-
-def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
-    """Main function to process sequences and extract conserved regions."""
-    try:
-        # Step 1: Run consensus script
-        run_consensus_script(cons_file, mafft_out, name)
-
-        # Step 2: Extract consensus sequence
-        consensus_seq = extract_consensus_sequence(mafft_out, count_of_lines)
-        
-        #Clean up files
-        name_alt = "_plusCONS.aln"
-        os.remove(f"{mafft_out.replace('.aln','')}{name_alt}")
-
-        # Step 3: Process alignment file
-        matches = process_alignment_file(mafft_out)
-        os.remove(mafft_out)
-        
-
-        if not matches:
-            raise ValueError("No matches found in the alignment file. Check the file format and regex pattern.")
-        # Step 4: Create alignment DataFrame
-        alignment_df = create_alignment_dataframe(matches, count_of_lines)
-	    
-        if 'Sequence_position' not in alignment_df.columns:
-            raise KeyError("Column 'Sequence_position' not found in alignment DataFrame.")
-
-        # Step 5: Pivot DataFrame
-        alignment_df.reset_index(drop=True, inplace=True)
-        try:
-            alignment_df_pivoted = alignment_df.pivot_table(index='Alignment_Position', columns='Accession', values=['Sequence_position'], aggfunc={'Sequence_position': 'first'}).reset_index()
-        except:
-            print(f'Failed_dataframe:{name}')
-            alignment_df.to_csv('out_datafram_pivot.csv')
-
-
-        try:
-          consensus_chars = list(consensus_seq)
-          alignment_df_pivoted['Consensus_Seq'] = consensus_chars
-          alignment_df_pivoted.to_csv('out_datafram_pivot.csv')
-        except:
-          print(f'Failed_consensus:{name}')
-	    
-        
-        #Clean up df
-        del alignment_df 
-
-        # Step 6: Find conserved regions
-        # start_positions, end_positions = find_conserved_regions(alignment_df_pivoted)
-        start_positions, end_positions = find_conserved_region_with_scoring(alignment_df_pivoted)
-	    
-
-        # Step 7: Extract shortened sequences
-        fasta_file_path = f'{name}_temporal.fasta'
-        sequence_dict = {record.id: str(record.seq) for record in SeqIO.parse(fasta_file_path, 'fasta')}
-        os.remove(fasta_file_path)
-
-        # Extract the sequence positions for each sequence at start positions
-        start_positions_sequence = alignment_df_pivoted.loc[start_positions, ('Sequence_position', slice(None))]
-        # Extract the sequence positions for each sequence at end positions
-        end_positions_sequence = alignment_df_pivoted.loc[end_positions, ('Sequence_position', slice(None))]
-
-        position_dict = {}
-        final_position_dict = {}
-        for seq_id, sequence_position_data in start_positions_sequence.iterrows():
-            # Extract the sequence positions for the current sequence
-            for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
-                position_dict[seq_id_alt] = position_value
-
-        for seq_id, sequence_position_data in end_positions_sequence.iterrows():
-            # Extract the sequence positions for the current sequence
-            for (seq_position, seq_id_alt), position_value in sequence_position_data.items():
-                start_value = position_dict[seq_id_alt]
-                final_position_dict[seq_id_alt] = (start_value, position_value)
-
-        shortened_sequences = extract_shortened_sequences(final_position_dict, sequence_dict)
-        del alignment_df_pivoted
-
-        return shortened_sequences
-
-    except Exception as e:
-        print(f"Error in sequence_cuter for {name}: {e} {start_positions},{end_positions}")
-        return {}
-
-@ray.remote(num_cpus=2)
-def sequence_cutting(file_name_for_msa,centroid,cons_file,count_of_lines,alt_centroid):
-    mafft_in = file_name_for_msa
-    mafft_out = f'{alt_centroid}_matches_number.aln'
-
-    command = [
-    "einsi",                   # The executable (einsi)
-    "--clustalout",            # Output in Clustal format
-    "--thread", "-1",          # Use all available CPU threads
-    "--reorder",               # Reorder sequences for better alignment
-    "--maxiterate", "2",       # Perform 2 iterative refinement cycles
-    "--retree", "1",           # Reconstruct the guide tree only once
-    "--genafpair",             # Use global alignment with generalized affine gap costs
-    "--namelength", "90",
-    mafft_in                   # Input file
-    ]
-
-    try:
-      with open(mafft_out, "w") as handle:
-        process = subprocess.Popen(command, stdout=handle, stderr=subprocess.DEVNULL)
-      process.wait()
-    
-    except Exception as e:
-        print(f"Error running MAFFT: {e}")
-        raise
-	    
-    numbering_result = sequence_numbering(alt_centroid, count_of_lines, mafft_out)
-    os.remove(mafft_out)
-    cut_sequence = sequence_cuter(count_of_lines, alt_centroid, numbering_result,cons_file)
-    gc.collect()
-    return cut_sequence
-
-
-
-def sg_and_palindromes(palindrome_results, accession, clean_seq):
-    return_list = {'Accession':accession}
-    if palindrome_results:
-        for palindromes, itrs in palindrome_results.items():
-            if len(itrs) == 1:
-                # Update the "Palindromes" column in the existing row
-                return_list['ITRs'] = len(itrs)
-                return_list['Seq_itr'] = itrs
-
-                begin_sequence = itrs[0].split('-')[0]
+            centroid = None
+            past_centroid = True
+            first_pass = False
+            temporal_list = []
+            clustered_sequences_dict = {}
+            with open(f"{output}/cluster_table.tsv", 'r') as result_file:
+                for line in result_file:
+                    centroid = line.split('\t')[0]
+                    if centroid not in temporal_list:
+                        temporal_list.append(centroid)
+                    if centroid == past_centroid:
+                        temporal_list.append(line.split('\t')[1])
+                    else:
+                        if first_pass:
+                            clustered_sequences_dict[past_centroid] = temporal_list
+                        temporal_list = []
+                    first_pass = True
+                    past_centroid = centroid
                 
-                check_begin = (position_looper_unique('ttaac', begin_sequence, begin_sequence))[0]
-                #if 'ttaa' in begin_sequence:
-                    #check_begin = True
-                if check_begin:
-                    return_list['TTAA'] = check_begin
+            
+            cluster_ray = []  # List to hold remote tasks
+            sequence_dict_reduced = final_pre_clustering_dataframe.set_index('Accession')['Full_dna'].to_dict()
 
-                    new_begin = clean_seq[:150]
-                    end_sequence = clean_seq[-150:]
-                    common_substrings = find_common_substring(new_begin, end_sequence)
-                    if common_substrings:
-                        return_list['SG'] = 'SG3'
+            for centroid, members in clustered_sequences_dict.items():
+                if len(members) > 1:
+                    if len(members) < 40:
+                      alt_centroid = members[0].strip().replace("$","").replace("'","")
+                      print(alt_centroid)
+                      file_name_for_msa = f'{alt_centroid}_temporal.fasta'
+                      with open(file_name_for_msa,'w') as temp_file:
+                        for sequence_name in members:
+                            print(sequence_name)
+                            full_dna_value = complete_sequence_dict[sequence_name.strip()]
+                            temp_file.write('>' + sequence_name.strip() + '\n' + full_dna_value + '\n')
+                      count_of_lines = len(members)
+                      cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines, alt_centroid))
+                      for unique_members in members:
+                        final_pre_clustering_dataframe.loc[
+                        final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                     else:
-                        return_list['SG'] = 'SG1'
-
-            elif len(itrs) > 1:
-                    
-                big_check = False
-                return_list['ITRs'] = len(itrs)
-                for small_itr in itrs:
-                    begin_sequence = small_itr.split('-')[0]
-                    #### Check if the sequences contain the TTAA motifs at the 3' and 5'
-                    check_begin = (position_looper_unique('ttaac', begin_sequence, begin_sequence))[0]
-                    
-                    if check_begin:
-                        return_list['TTAA'] = check_begin
-                        big_check = True
-                        passed_itr = begin_sequence
-                        break
-
-                if big_check:
-
-                    new_begin = clean_seq[:150]
-                    end_sequence = clean_seq[-150:]
-                    common_substrings = find_common_substring(new_begin, end_sequence)
-                    if common_substrings:
-                        return_list['SG'] = 'SG4'
-                    else:
-                        return_list['SG'] = 'SG2'
-        return(return_list)    
-    else:
-        return(False)
-
-def batch_par(frahmmer_paths):
-    # num_cores = int(ray.cluster_resources()["CPU"])
-    num_cores = 2000
-    if num_cores == 0:
-        raise ValueError("No CPU resources available.")
-    # If the number of files is smaller than the number of cores use the appropriate amount of cores
-    if len(frahmmer_paths) < num_cores:
-        chunks = [[i for i in frahmmer_paths]]
-    else:
-
-        extra_list = []
-        chunks = []
-        temp_list = []
-        count = 0
-        # Use the whole part of the batches per core to assign the batches to each core
-        for i in (frahmmer_paths):
-            count += 1
-            if count <= num_cores:
-                temp_list.append(i)
-            else:
-                chunks.append(temp_list)
-                temp_list = [i]
-                count = 1
-            extra_list.append(i)
-        chunks.append(temp_list)
-        # Calculate the extra values not assigned to each batch
-                # Convert inner lists to tuples before creating sets
-
-        missing_values = list(set(frahmmer_paths) - set(extra_list))
-
-        if missing_values:
-            chunks.append(missing_values)
-
-    return chunks
-
-# Step 1: Flatten the deeply nested list
-def flatten_deep(nested):
-    """Recursively flatten a deeply nested list."""
-    flat_list = []
-    for item in nested:
-        if isinstance(item, list):
-            flat_list.extend(flatten_deep(item))  # Recurse if item is a list
-        else:
-            flat_list.append(item)  # Append if item is not a list
-    return flat_list
-    
-    
-def matcher(motif, small_sequence, location, seq):
-    """
-    Find matches of a motif inside a sequence using regular expressions.
-
-    Args:
-        motif (str): The motif to be matched. It can be a regular expression pattern.
-        small_sequence (str): The sequence in which the motif is searched for.
-        location (str): Indicates the location of the small sequence in relation to the ORF.
-                        Valid values are 'L' (left) or 'R' (right).
-        seq (str): The complete sequence in which the small sequence is located.
-
-    Returns:
-        list of tuple: A list of tuples representing the start and end positions of the matches
-                       found in relation to the complete sequence.
-
-    Raises:
-        ValueError: If the location is not 'L' or 'R'.
-    """
-
-    if location not in ["L", "R"]:
-        raise ValueError("location must be 'L' or 'R'")
-
-    # List in which indexes are stored
-    dictionary_values = []
-
-    # Check if the small sequence is at the left or right side
-    if location == "L":
-        # Find the motif through regex in the given sequence
-        for matching in re.finditer(motif, str(small_sequence), re.IGNORECASE):
-            for original_match in re.finditer(str(small_sequence[matching.start():]), str(seq), re.IGNORECASE):
-                # Save the start and end of the match in dictionary values
-                dictionary_values.append((original_match.start(), original_match.end()))
-    else:
-        for matching in re.finditer(motif, str(small_sequence), re.IGNORECASE):
-            for original_match in re.finditer(str(small_sequence[:matching.end()]), str(seq), re.IGNORECASE):
-                dictionary_values.append((original_match.start(), original_match.end()))
-
-    return dictionary_values
-    
-    
-def find_common_substring(seq1, seq2):
-    common_substrings = set()
-    seq2 = str(Seq(seq2).reverse_complement())
-    for i in range(len(seq1) - 9):  # Iterate over all possible starting positions
-        substring = seq1[i:i + 10]  # Extract substring of length 10
-        if substring in seq2:  # Check if substring is present in seq2
-            common_substrings.add(substring)
-        else:
-            for i in range(len(substring)):
-                # Replace the current letter in the loop with a dot
-                new_string = substring[:i] + '.' + substring[i + 1:]
-
-                for matching in re.finditer(new_string, str(seq2), re.IGNORECASE):
-                    if matching.start():
-                        common_substrings.add(new_string)
-
-    return common_substrings
-
-def parallel_paths(file_list, type_list, path_to_files, output):
-
-    """
-    Function to run ray in parallel and in batches with the function get_paths.
-
-    :param file_list: List with name of files to be given to get_paths
-    :type file_list: list
-    :param type_list: Variable that indicates how get_paths processes file_list
-    :type type_list: str
-    :param path_to_files: Path to the directory containing the files listed in file_list
-    :type path_to_files: str
-    :param output: Path to the output file were some of the files in file_list may be.
-    :type output: str
-
-    :return: Returns the output from get_paths
-    :rtype: It can be a list with file paths or 3 lists of strings
-    """
-
-    # Determine the number of available cpu's
-    num_cores = int(ray.cluster_resources()["CPU"])
-    if num_cores == 0:
-        raise ValueError("No CPU resources available.")
-    # Determine chunk sizes with ceiling function. It that maps x to the smallest integer greater than or equal to x
-    chunk_size = math.ceil(len(file_list) / int(num_cores))
-
-    # If the number of files is smaller than the number of cores use the appropriate amount of cores
-    if len(file_list) <= num_cores:
-        chunks = [[i] for i in file_list]
-    else:
-        extra_list = []
-        # Check if the amount of divided batches can be equally assigned for each core
-        if (len(file_list) / num_cores).is_integer():
-            # Save the batches according to chunk size
-            chunks = [file_list[i:i + chunk_size] for i in range(0, len(file_list), chunk_size)]
-        else:
-            # Check the fractional left for the batches per core
-            extra = len(file_list) / num_cores
-            frac, whole = math.modf(extra)
-            chunks = []
-            # Use the whole part of the batches per core to assign the batches to each core
-            for i in range(0, len(file_list) - (len(file_list) - (int(whole) * num_cores)), int(whole)):
-                if whole > 1:
-                    # If the size batch is bigger than one per core save the whole number of batches per core
-                    chunks.append(file_list[i:i + int(whole)])
-                    # Calculate the extra items to be assigned to the batches
-                    for j in file_list[i:i + int(whole)]:
-                        extra_list.append(j)
+                        split_members = split_and_distribute(members)
+                        for chunk in split_members:
+                          alt_centroid = chunk[0].strip().replace("$","").replace("'","")
+                          print(alt_centroid)
+                          file_name_for_msa = f'{alt_centroid}_temporal.fasta'
+                          with open(file_name_for_msa,'w') as temp_file:
+                            for sequence_names in chunk:
+                              full_dna_value = complete_sequence_dict[sequence_names.strip()]
+                              temp_file.write('>' + sequence_names + '\n' + full_dna_value + '\n')
+                          count_of_lines = len(chunk)
+                          cluster_ray.append(sequence_cutting.remote(file_name_for_msa, centroid, cons_file, count_of_lines, alt_centroid))
+                          for unique_members in chunk:
+                            final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == unique_members.strip(), "Clustered"] = 'True'
                 else:
-                    # If the size batch is smaller than one per core occupy all the possible cores with batches of size 1
-                    chunks.append([file_list[i]])
-                    extra_list.append(file_list[i])
-            # Calculate the extra values not assigned to each batch
-            missing_values = list(set(file_list) - set(extra_list))
-            # zip the batches and missing values
-            for sublist, value in zip(chunks, missing_values):
-                sublist.append(value)
-    # Submit tasks using ray.remote
-    ray_tasks = [get_paths.remote(chunk, path_to_files, type_list, output) for chunk in chunks]
+                    final_pre_clustering_dataframe.loc[
+                        final_pre_clustering_dataframe["Accession"] == members[0].strip(), "Clustered"] = 'False'
 
-    # Use ray.wait to retrieve results
-    ready_ids, remaining_ids = ray.wait(ray_tasks, num_returns=len(ray_tasks))
+            # Process tasks in batches
+            batch_size = 5  # Adjust based on memory constraints
+            task_batches = [
+                cluster_ray[i:i + batch_size]
+                for i in range(0, len(cluster_ray), batch_size)
+            ]
 
-    # Get the results from the completed tasks
-    results = ray.get(ready_ids)
+            tmp_base_path = "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/tmp"
 
-    return results
-    
-@ray.remote
-def get_paths(file, input_path, type_list, output):
-    """
-    Parallelized ray function which processes file depending on type list.
+            newlist = []  # To store results
+            for batch in task_batches:
+                batch_results = ray.get(batch)  # Retrieve results for the current batch
+                newlist.extend(batch_results)  # Append results to the final list
+                # List all subdirectories
+                subdirs = [os.path.join(tmp_base_path, d) for d in os.listdir(tmp_base_path) if os.path.isdir(os.path.join(tmp_base_path, d))]
+                for subdir in subdirs:
+                    try:
+                        shutil.rmtree(subdir)  # Recursively delete the subdirectory
+                        print(f"Deleted temporary directory: {subdir}")
+                    except Exception as e:
+                        print(f"Failed to delete {subdir}: {e}")
 
-    :param file: List that holds file paths
-    :type file: list
-    :param type_list: Variable that indicates how to processes file_list
-    :type type_list: str
-    :param input_path: Path to the directory containing the files listed in file_list
-    :type input_path: str
-    :param output: Path to the output file were some of the files in file_list may be.
-    :type output: str
+                ray.internal.free(batch)
+                # Clean up batch memory
+                del batch_results
+                del batch
+                gc.collect()
 
-    :return: Returns the output from get_paths
-    :rtype: It can be a list with file paths or 3 lists of strings
-    """
 
-    genome_paths = []
+            cluster_ray = [] 
+            name_files = set()
+            for file_name in newlist:
+                for seq_id, sequence in file_name.items():
+                    if seq_id not in name_files:
+                        cluster_ray.append(run_palindrome.remote(seq_id, mistake, sequence))       
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == seq_id, "Transposon"] = sequence
+                        name_files.add(seq_id)
+            newlist = ray.get(cluster_ray)
 
-    # Determine patern to be searched for
-    if type_list == 'genome':
-        pattern = "*.fna"
-    elif type_list == 'frahmmer':
-        pattern = '*.out'
-
-    for direction in file:
-        # Iterate through all file paths inside variable file if it's a directory
-        if os.path.isdir(input_path + '/' + direction):
-            # Search for the pattern recursively in the path
-            for path, subdirs, files in os.walk(input_path + '/' + direction):
-                for access in files:
-                    # If there's a match save the path
-                    if fnmatch(access, pattern):
-                        r = (os.path.join(path, access))
-                        genome_paths.append(r)
+            for sg_pal_dict in newlist:
+                if sg_pal_dict:
+                    accession_name = sg_pal_dict['Accession']
+                    if 'TTAA' in sg_pal_dict:
+                        ttaa_result = sg_pal_dict['TTAA'] 
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "ttaa"] = ttaa_result
+                    if 'SG' in sg_pal_dict:
+                        sg_result = sg_pal_dict['SG']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "SG"] = sg_result
+                    if 'ITRs' in sg_pal_dict:
+                        itr_result = sg_pal_dict['ITRs']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "N_palindromes"] = itr_result
+                    if 'Seq_itr' in sg_pal_dict:
+                        itr_seq = sg_pal_dict['Seq_itr']
+                        final_pre_clustering_dataframe.loc[final_pre_clustering_dataframe["Accession"] == accession_name, "palindromes"] = itr_seq                
+                #os.remove(file_name)
+            final_pre_clustering_dataframe.to_csv(f'{output}/Bioprospecting_results.csv')  
+            sys.stderr.write('Finished transposon boundary refining\n')
         else:
-            # If it's a file save the path of the file directly
-            if pattern.replace('*', '') in direction:
-                r = input_path + '/' + direction
-                genome_paths.append(r)
-    # Return a list of the paths
-    return genome_paths
-    
+            ray.init()
+            sys.stderr.write('Pipeline Option 5')
+            msa_results = small_reader(output)           
+        
+
+    sys.stderr.write("Program finished correctly.\n")
+    shutil.rmtree('tmp')
+
+
+    # Log execution time
+    end_time = time.time()
+    print(f"The time of execution is: {(end_time - start_time) / 60} minutes")
+
+
+if __name__ == "__main__":
+    main()
