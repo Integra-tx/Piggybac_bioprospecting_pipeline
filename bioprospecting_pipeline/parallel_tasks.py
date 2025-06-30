@@ -525,8 +525,8 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
         if domain_check: 
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
-            # rna_res = rna_extract(accession, rna_sequences[accession])
-            # top_hit['rDNA'] = f"{rna_sequences[0]}: {rna_sequences[1]}"
+            rna_res = rna_extract(accession, rna_sequences[accession])
+            top_hit['rDNA'] = f"{rna_sequences[0]}: {rna_sequences[1]}"
         
             
             species = accession.split('_')
@@ -544,60 +544,62 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
 
 def rna_extract(accession, sequence):
     # Write sequence to temp FASTA file
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fasta_path = os.path.join(tmpdir, "query.fa")
-        with open(fasta_path, "w") as f:
-            f.write(f">{accession}\n{sequence}\n")
-    
-        # Run cmscan
-        tblout_path = os.path.join(tmpdir, "query.tblout")
-        cmscan_cmd = [
-            "cmscan",
-            "--cut_ga", "--rfam", "--nohmmonly",
-            "--fmt", "2",
-            "--clanin", "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.clanin",     # ← UPDATE with full path
-            "--tblout", tblout_path,
-            "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.cm",                     # ← UPDATE with full path
-            fasta_path
-        ]
-        
-        subprocess.run(cmscan_cmd, check=True)
-    
-        # Parse results for rDNA hits
-        rdna_hits = []
-        with open(tblout_path, "r") as f:
-            for line in f:
-                if line.startswith("#"):
-                    continue
-                fields = line.strip().split(maxsplit=18)  # Ensure description is preserved as last field
-                model_name = fields[1]     # e.g., SSU_rRNA_bacteria
-                rfam_acc = fields[2]       # e.g., RF00177
-                seq_name = fields[3]
-                evalue = fields[17]
-                score = fields[16]
-                begin_int = fields[9]
-                end_int = fields[10]
-                clan_mark = fields[18]
-        
-                # Optional: stricter filter only on best (non-overlapping) hits
-                if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
-                    rdna_hits.append({
-                        "Model": model_name,
-                        "Accession": rfam_acc,
-                        "E-value": evalue,
-                        "Score": score,
-                        "Hit": sequence[int(begin_int):int(end_int)]
-                    })
 
-        # Apply prioritization: lowest E-value, then highest score
-        if rdna_hits:
-            best_rdna_hit = sorted(
-                rdna_hits,
-                key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
-            )[0]
-            return [best_rdna_hit["Model"], best_rdna_hit["Hit"]]
-        else:
-            return None
+    fasta_path = "query.fa"
+    with open(fasta_path, "w") as f:
+        f.write(f">{accession}\n{sequence}\n")
+
+    # Run cmscan
+    tblout_path = "query.tblout"
+    cmscan_cmd = [
+        "cmscan",
+        "--cut_ga", "--rfam", "--nohmmonly",
+        "--fmt", "2",
+        "--clanin", "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.clanin",     # ← UPDATE with full path
+        "--tblout", tblout_path,
+        "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.cm",                     # ← UPDATE with full path
+        fasta_path
+    ]
+    
+    subprocess.run(cmscan_cmd, check=True)
+
+    # Parse results for rDNA hits
+    rdna_hits = []
+    with open(tblout_path, "r") as f:
+        for line in f:
+            if line.startswith("#"):
+                continue
+            fields = line.strip().split(maxsplit=18)  # Ensure description is preserved as last field
+            model_name = fields[1]     # e.g., SSU_rRNA_bacteria
+            rfam_acc = fields[2]       # e.g., RF00177
+            seq_name = fields[3]
+            evalue = fields[17]
+            score = fields[16]
+            begin_int = fields[9]
+            end_int = fields[10]
+            clan_mark = fields[18]
+    
+            # Optional: stricter filter only on best (non-overlapping) hits
+            if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
+                rdna_hits.append({
+                    "Model": model_name,
+                    "Accession": rfam_acc,
+                    "E-value": evalue,
+                    "Score": score,
+                    "Hit": sequence[int(begin_int):int(end_int)]
+                })
+
+    # Apply prioritization: lowest E-value, then highest score
+    os.remove(fasta_path)
+    os.remove(tblout_path)
+    if rdna_hits:
+        best_rdna_hit = sorted(
+            rdna_hits,
+            key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
+        )[0]
+        return [best_rdna_hit["Model"], best_rdna_hit["Hit"]]
+    else:
+        return None
 
 
 def parse_blast_xml(xml_path):
