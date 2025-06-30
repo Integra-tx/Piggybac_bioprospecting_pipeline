@@ -394,7 +394,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                     rna_end = min(begin + rna_extension, len(record.seq))
                                     rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
             
-                                rna_key = formatted_id
+                                rna_key = formatted_id.strip()
                                 rna_sequences[rna_key] = rna_seq
 		    
 
