@@ -251,7 +251,7 @@ def delete_sequences(identity_list):
     return identity_list, elimination_list
 
 @ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db,min_orf_length=300):
+def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db, rna_extension, min_orf_length=300):
     """
     Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
 
@@ -362,6 +362,7 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                     print(out_in + ' ' + str(check_count) + ' ' + str(len(identity_list)))
 
             if run_check:
+                rna_sequences = {}
                 with open(dna_filename, 'w') as trad:
                     count = 0
                     for record in SeqIO.parse(f"{final_path}", "fasta"):
@@ -372,30 +373,34 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                 trad.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
+             # Handle DNA extension and writing to file
                                 if "+" in ids:
-                                    if (begin - extension) < 0:
-                                        trad_begin = 0
-                                    else:
-                                        trad_begin = begin - extension
-                                    if (end + extension) > len(record.seq):
-                                        trad_end = len(record.seq)
-                                    else:
-                                        trad_end = end + extension
+                                    trad_begin = max(begin - extension, 0)
+                                    trad_end = min(end + extension, len(record.seq))
                                     trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
+            
                                 elif ids.split("|")[3].strip() == "(-)":
-                                    if (end - extension) < 0:
-                                        trad_begin = 0
-                                    else:
-                                        trad_begin = end - extension
-                                    if (begin + extension) > len(record.seq):
-                                        trad_end = len(record.seq)
-                                    else:
-                                        trad_end = begin + extension
-                                    trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
+                                    trad_begin = max(end - extension, 0)
+                                    trad_end = min(begin + extension, len(record.seq))
+                                    trad.write(str(record.seq[trad_begin:trad_end].reverse_complement()).upper() + "\n")
+            
+                                # Handle RNA extension and saving to dict
+                                if "+" in ids:
+                                    rna_begin = max(begin - rna_extension, 0)
+                                    rna_end = min(end + rna_extension, len(record.seq))
+                                    rna_seq = str(record.seq[rna_begin:rna_end]).upper()
+                                elif ids.split("|")[3].strip() == "(-)":
+                                    rna_begin = max(end - rna_extension, 0)
+                                    rna_end = min(begin + rna_extension, len(record.seq))
+                                    rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
+            
+                                rna_key = ids.strip() + "_" + str(count)
+                                rna_sequences[rna_key] = rna_seq
 		    
 
         try:
             os.path.isfile(dna_filename)
+            print(rna_sequences)
             pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
             os.remove(dna_filename)
             print(f"Finished with {genome_name}")
