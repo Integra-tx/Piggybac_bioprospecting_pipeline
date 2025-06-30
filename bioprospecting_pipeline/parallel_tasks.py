@@ -422,14 +422,14 @@ def genome_reader(combined_data):
 
 
 
-def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db):
+def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db,rna_extension):
     parse = []
     for i in chunks:
         if type == 1:
             parse.append(run_frehmmr.remote(i, output, input_1, seed, orf_length))
         elif type == 2:
             name = i
-            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,orf_length))
+            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,rna_extension,orf_length))
         elif type == 3:
             parse.append(genome_reader.remote(i))
     newlist = ray.get(parse)
