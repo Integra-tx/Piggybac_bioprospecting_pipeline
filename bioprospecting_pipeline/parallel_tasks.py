@@ -16,7 +16,7 @@ import subprocess
 import collections
 import math
 import gc
-import tempfile
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -251,7 +251,7 @@ def delete_sequences(identity_list):
     return identity_list, elimination_list
 
 @ray.remote
-def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db, rna_extension, min_orf_length=300):
+def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_dict, blast_path, blast_db,min_orf_length=300):
     """
     Ray parallelized function to extract DNA and amino acid sequences from genomes based on Frahmmer results.
 
@@ -362,7 +362,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                     print(out_in + ' ' + str(check_count) + ' ' + str(len(identity_list)))
 
             if run_check:
-                rna_sequences = {}
                 with open(dna_filename, 'w') as trad:
                     count = 0
                     for record in SeqIO.parse(f"{final_path}", "fasta"):
@@ -373,42 +372,37 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                                 trad.write(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
-             # Handle DNA extension and writing to file
                                 if "+" in ids:
-                                    trad_begin = max(begin - extension, 0)
-                                    trad_end = min(end + extension, len(record.seq))
+                                    if (begin - extension) < 0:
+                                        trad_begin = 0
+                                    else:
+                                        trad_begin = begin - extension
+                                    if (end + extension) > len(record.seq):
+                                        trad_end = len(record.seq)
+                                    else:
+                                        trad_end = end + extension
                                     trad.write(str(record.seq[trad_begin:trad_end]).upper() + "\n")
-            
                                 elif ids.split("|")[3].strip() == "(-)":
-                                    trad_begin = max(end - extension, 0)
-                                    trad_end = min(begin + extension, len(record.seq))
-                                    trad.write(str(record.seq[trad_begin:trad_end].reverse_complement()).upper() + "\n")
-            
-                                # Handle RNA extension and saving to dict
-                                if "+" in ids:
-                                    rna_begin = max(begin - rna_extension, 0)
-                                    rna_end = min(end + rna_extension, len(record.seq))
-                                    rna_seq = str(record.seq[rna_begin:rna_end]).upper()
-                                elif ids.split("|")[3].strip() == "(-)":
-                                    rna_begin = max(end - rna_extension, 0)
-                                    rna_end = min(begin + rna_extension, len(record.seq))
-                                    rna_seq = str(record.seq[rna_begin:rna_end].reverse_complement()).upper()
-            
-                                rna_key = ids.strip() + "_" + str(count)
-                                rna_sequences[rna_key] = rna_seq
+                                    if (end - extension) < 0:
+                                        trad_begin = 0
+                                    else:
+                                        trad_begin = end - extension
+                                    if (begin + extension) > len(record.seq):
+                                        trad_end = len(record.seq)
+                                    else:
+                                        trad_end = begin + extension
+                                    trad.write(str((record.seq[trad_begin:trad_end]).reverse_complement()).upper() + "\n")
 		    
 
-
-                   
         try:
             os.path.isfile(dna_filename)
-            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, rna_sequences, min_orf_length, blast_path,blast_db)
+            pre_cluster_dataframe = orf_finder(dna_filename, complete_taxonomy_dict, min_orf_length, blast_path,blast_db)
             os.remove(dna_filename)
             print(f"Finished with {genome_name}")
             return pre_cluster_dataframe
         except:
             with open('Genomes_without_hits.txt','a') as empty_file:
-                empty_file.write(f'{dna_filename}\n')
+                empty_file.write('dna_filename\n')
             return None
 
 @ray.remote
@@ -423,14 +417,14 @@ def genome_reader(combined_data):
 
 
 
-def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db, extension_rna):
+def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf_length, complete_taxonomy_dict, blast_path, blast_db):
     parse = []
     for i in chunks:
         if type == 1:
             parse.append(run_frehmmr.remote(i, output, input_1, seed, orf_length))
         elif type == 2:
             name = i
-            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,extension_rna,orf_length))
+            parse.append(extract_dna.remote(i, name, genome_paths, extension, output, complete_taxonomy_dict, blast_path, blast_db,orf_length))
         elif type == 3:
             parse.append(genome_reader.remote(i))
     newlist = ray.get(parse)
@@ -446,7 +440,7 @@ def batch_write(genome_paths, extension, output, chunks, input_1, type, seed,orf
         
 
     
-def orf_finder(file_name, complete_taxonomy_dict, rna_sequences, min_orf_length=300, blast_path=None, blast_db=None, evalue=0.001):
+def orf_finder(file_name, complete_taxonomy_dict, min_orf_length=300, blast_path=None, blast_db=None, evalue=0.001):
     """
     Identifies ORFs in DNA sequences and performs domain analysis.
     
@@ -464,85 +458,19 @@ def orf_finder(file_name, complete_taxonomy_dict, rna_sequences, min_orf_length=
     # Validate BLAST paths
     if not blast_path or not blast_db:
         raise ValueError("BLAST executable path and database path must be provided.")
-    
+
     for record in SeqIO.parse(file_name, "fasta"):
         accession = record.id
         sequence = str(record.seq).upper()
-        orfs = extract_orfs(sequence, min_orf_length, accession, blast_path, blast_db, complete_taxonomy_dict,rna_sequences)
+        orfs = extract_orfs(sequence, min_orf_length, accession, blast_path, blast_db, complete_taxonomy_dict)
         if orfs:
             results.append(orfs)
-            
-    os.remove(rna_temp)
-
-            
+        
     
     # Update DataFrame with results
     return results
-def parse_evalue(val):
-    """Safely convert E-value to float even if in scientific notation."""
-    try:
-        return float(val)
-    except ValueError:
-        return math.inf
-def rna_extract(accession, sequence):
-    # Write sequence to temp FASTA file
-    with tempfile.TemporaryDirectory() as tmpdir:
-        fasta_path = os.path.join(tmpdir, "query.fa")
-        with open(fasta_path, "w") as f:
-            f.write(f">{accession}\n{sequence}\n")
-    
-        # Run cmscan
-        tblout_path = os.path.join(tmpdir, "query.tblout")
-        cmscan_cmd = [
-            "cmscan",
-            "--cut_ga", "--rfam", "--nohmmonly",
-            "--fmt", "2",
-            "--clanin", "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.clanin",     # ← UPDATE with full path
-            "--tblout", tblout_path,
-            "/home/alejandro_af_integra_tx_com/Piggybac_bioprospecting_pipeline/bioprospecting_pipeline/Rfam.cm",                     # ← UPDATE with full path
-            fasta_path
-        ]
-        
-        subprocess.run(cmscan_cmd, check=True)
-    
-        # Parse results for rDNA hits
-        rdna_hits = []
-        with open(tblout_path, "r") as f:
-            for line in f:
-                if line.startswith("#"):
-                    continue
-                fields = line.strip().split(maxsplit=18)  # Ensure description is preserved as last field
-                model_name = fields[1]     # e.g., SSU_rRNA_bacteria
-                rfam_acc = fields[2]       # e.g., RF00177
-                seq_name = fields[3]
-                evalue = fields[17]
-                score = fields[16]
-                begin_int = fields[9]
-                end_int = fields[10]
-                clan_mark = fields[18]
-        
-                # Optional: stricter filter only on best (non-overlapping) hits
-                if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
-                    rdna_hits.append({
-                        "Model": model_name,
-                        "Accession": rfam_acc,
-                        "E-value": evalue,
-                        "Score": score,
-                        "Hit": sequence[int(begin_int):int(end_int)]
-                    })
 
-        # Apply prioritization: lowest E-value, then highest score
-        if rdna_hits:
-            best_rdna_hit = sorted(
-                rdna_hits,
-                key=lambda d: (parse_evalue(d["E-value"]), -float(d["Score"]))
-            )[0]
-            return [best_rdna_hit["Model"], best_rdna_hit["Hit"]]
-        else:
-            return None
-            
-        
-def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete_taxonomy_dict, rna_sequences):
+def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete_taxonomy_dict):
     """Extracts ORFs from a DNA sequence."""
     orfs = {}
     translated_seq_set = set()
@@ -560,9 +488,8 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                         codon2 = dna[stop_codon_index:stop_codon_index + 3]
                         if codon2 in ['TAA', 'TAG', 'TGA']:
                             position2 = stop_codon_index
-                            if len(dna[position1:position2 + 3]) > (min_length * 3):
+                            if len(dna[position1:position2 + 3]) > 750:
                                 translated_seq = str(Seq(dna[position1:position2 + 3]).translate())
-                                translated_seq = translated_seq.replace('*','')
                                 for fract in translated_seq_set:
                                     if translated_seq in fract:
                                         repeated_check = True
@@ -576,7 +503,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                                 repeated_check = False
                                 break
         
-
+        
     orf_length = []
     domain_dicts = []
     for i,j in orfs.items():
@@ -585,7 +512,6 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             if domain_results:
                 new_dicts = prepare_result(accession, i, domain_results)
                 domain_dicts.append(new_dicts)
-
     if domain_dicts:
         domain_check = True
         if len(domain_dicts) == 1:
@@ -594,8 +520,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
         if domain_check: 
             top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
             top_hit['Full_dna'] = sequence
-            rna_res = rna_extract(accession, rna_sequences[accession])
-            top_hit['rDNA'] = f"{rna_sequences[0]}: {rna_sequences[1]}"
+        
             
             species = accession.split('_')
             species_name = species[0] + '_' + species[1] 
@@ -604,9 +529,20 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             	top_hit['Taxonomy'] = taxonomy_classification
             else:
                 print(f'Taxonomy for {species_name} not found')
-            
+            	
             return top_hit
-
+            top_hit['Full_dna'] = sequence
+        
+            
+            species = accession.split('_')
+            species_name = species[0] + '_' + species[1] 
+            if species_name in complete_taxonomy_dict:
+            	taxonomy_classification = complete_taxonomy_dict[species_name]
+            	top_hit['Taxonomy'] = taxonomy_classification
+            else:
+                print(f'Taxonomy for {species_name} not found')
+            	
+            return top_hit
     else:
         return None
 
@@ -622,7 +558,11 @@ def parse_blast_xml(xml_path):
             small_dict = {}
             for align in record.alignments:
                 for hsp in align.hsps:
-                    if 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
+                    if 'zinc-ribbon' in align.hit_def or 'zf-ribbon' in align.hit_def or 'ZF_C2H2' in align.hit_def or 'PHD' in align.hit_def or 'zf-' in align.hit_def or 'zinc finger' in align.hit_def or 'C1 domain' in align.hit_def or 'C-terminal domain' in align.hit_def:
+                        domain = 'Zinc finger'
+                        hit_location = (hsp.query_start, hsp.query_end)
+                        small_dict[domain] = hit_location
+                    elif 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
                         domain = 'DDE'
                         hit_location = (hsp.query_start, hsp.query_end)
                         small_dict[domain] = hit_location
@@ -638,11 +578,6 @@ def parse_blast_xml(xml_path):
                             begin = min(smallest)
                             end = max(biggest)
                             hits_dict[query] = str(begin) + '-' + str(end)
-                    elif 'zinc-ribbon' in align.hit_def or 'zf-ribbon' in align.hit_def or 'ZF_C2H2' in align.hit_def or 'PHD' in align.hit_def or 'zf-' in align.hit_def or 'zinc finger' in align.hit_def or 'C1 domain' in align.hit_def or 'C-terminal domain' in align.hit_def:
-                        domain = 'Zinc finger'
-                        hit_location = (hsp.query_start, hsp.query_end)
-                        small_dict[domain] = hit_location
-
                     elif 'Family of unknown function' in align.hit_def or 'Domain of unknown function' in align.hit_def:
                         term_a = False
                     else:
@@ -686,7 +621,6 @@ def prepare_result(accession, protein_seq, domain_results):
             "Transposon": '',
             "CRD_motif": crd_motif,
             "DDE": dde_domain,
-            "rDNA": '',
             "N-term": only_n_term,  
             "No-nterm": no_n_term_seq, 
             "ttaa": '',
@@ -1425,7 +1359,7 @@ def sequence_cuter(count_of_lines, name, mafft_out, cons_file):
         return shortened_sequences
 
     except Exception as e:
-        print(f"Error in sequence_cuter for {name}: {e}")
+        print(f"Error in sequence_cuter for {name}: {e} {start_positions},{end_positions}")
         return {}
 
 @ray.remote(num_cpus=2)
