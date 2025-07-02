@@ -371,8 +371,6 @@ def extract_dna(out_in, name, genome_paths, extension, out, complete_taxonomy_di
                             if record.id == ids.split("|")[1]:
                                 formatted_id = ids.replace("|", "_").replace('_(-)','').replace('_(+)','').strip() + '_' + str(count) + '\n'
                                 trad.write(formatted_id)
-                                if '1989019' in formatted_id:
-                                    print(formatted_id)
                                 begin = int(ids.split("|")[2].split("-")[0])
                                 end = int(ids.split("|")[2].split("-")[1])
              # Handle DNA extension and writing to file
@@ -597,14 +595,16 @@ def rna_extract(accession, sequence):
             clan_mark = fields[18]
     
             # Optional: stricter filter only on best (non-overlapping) hits
-            if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
-                rdna_hits.append({
-                    "Model": model_name,
-                    "Accession": rfam_acc,
-                    "E-value": evalue,
-                    "Score": score,
-                    "Hit": sequence[int(begin_int):int(end_int)]
-                })
+            # if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
+            rdna_hits.append({
+                "Model": model_name,
+                "Accession": rfam_acc,
+                "E-value": evalue,
+                "Score": score,
+                "Hit": (int(begin_int),int(end_int))
+            })
+            with open('RNA_hits.fasta','a') as rna_filling:
+                rna_filling.write('>' + accession + '_' + model_name + '_' + int(begin_int) + '-' + int(end_int) + '\n' + sequence[int(begin_int):int(end_int)] + '\n')
 
     # Apply prioritization: lowest E-value, then highest score
     os.remove(fasta_path)
