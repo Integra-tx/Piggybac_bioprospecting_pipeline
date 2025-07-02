@@ -593,7 +593,8 @@ def rna_extract(accession, sequence):
             begin_int = fields[9]
             end_int = fields[10]
             clan_mark = fields[18]
-    
+            
+            begin_int, end_int = sorted((begin_int, end_int), key=int)
             # Optional: stricter filter only on best (non-overlapping) hits
             # if ("rRNA" in model_name or "tRNA" in model_name or rfam_acc in {"RF00177", "RF00001", "RF01959", "RF02540", "RF02543", "RF02541"}) :
             rdna_hits.append({
