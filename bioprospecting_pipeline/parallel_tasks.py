@@ -604,7 +604,7 @@ def rna_extract(accession, sequence):
                 "Hit": (int(begin_int),int(end_int))
             })
             with open('RNA_hits.fasta','a') as rna_filling:
-                rna_filling.write('>' + accession + '_' + model_name + '_' + int(begin_int) + '-' + int(end_int) + '\n' + sequence[int(begin_int):int(end_int)] + '\n')
+                rna_filling.write('>' + accession + '_' + model_name + '_' + begin_int + '-' + end_int + '\n' + sequence[int(begin_int):int(end_int)] + '\n')
 
     # Apply prioritization: lowest E-value, then highest score
     os.remove(fasta_path)
