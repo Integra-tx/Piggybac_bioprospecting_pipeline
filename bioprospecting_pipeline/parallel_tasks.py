@@ -562,7 +562,7 @@ def parse_blast_xml(xml_path):
                         domain = 'Zinc finger'
                         hit_location = (hsp.query_start, hsp.query_end)
                         small_dict[domain] = hit_location
-                    elif 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'family transposase' or 'IS605' in align.hit_def:
+                    elif 'pfam13843' in align.hit_def or 'DDE' in align.hit_def or 'Transposase IS4' in align.hit_def or 'transpos_IS630' in align.hit_def or 'IS605' in align.hit_def:
                         domain = 'DDE'
                         hit_location = (hsp.query_start, hsp.query_end)
                         small_dict[domain] = hit_location
