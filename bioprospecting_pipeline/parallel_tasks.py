@@ -529,23 +529,27 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             if not domain_dicts[0]:
                 domain_check = False
         if domain_check: 
-            top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-            top_hit['Full_dna'] = sequence
-            rna_res = rna_extract(accession, rna_sequences[accession])
-            if rna_res:
-                top_hit['rDNA'] = f"{rna_res[0]}: {rna_res[1]}"
+            dde_dicts = [d for d in domain_dicts if d is not None and "DDE" in d]
+            if dde_dicts:
+                top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
+                top_hit['Full_dna'] = sequence
+                rna_res = rna_extract(accession, rna_sequences[accession])
+                if rna_res:
+                    top_hit['rDNA'] = f"{rna_res[0]}: {rna_res[1]}"
+                else:
+                    top_hit['rDNA'] = None
+                
+                species = accession.split('_')
+                species_name = species[0] + '_' + species[1] 
+                if species_name in complete_taxonomy_dict:
+                	taxonomy_classification = complete_taxonomy_dict[species_name]
+                	top_hit['Taxonomy'] = taxonomy_classification
+                else:
+                    print(f'Taxonomy for {species_name} not found')
+                	
+                return top_hit
             else:
-                top_hit['rDNA'] = None
-            
-            species = accession.split('_')
-            species_name = species[0] + '_' + species[1] 
-            if species_name in complete_taxonomy_dict:
-            	taxonomy_classification = complete_taxonomy_dict[species_name]
-            	top_hit['Taxonomy'] = taxonomy_classification
-            else:
-                print(f'Taxonomy for {species_name} not found')
-            	
-            return top_hit
+                return None
 
     else:
         return None
