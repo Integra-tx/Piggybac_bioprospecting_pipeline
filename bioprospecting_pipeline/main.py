@@ -214,7 +214,6 @@ def main():
                         split_members = split_and_distribute(members)
                         for chunk in split_members:
                           alt_centroid = chunk[0].strip().replace("$","").replace("'","")
-                          print(alt_centroid)
                           file_name_for_msa = f'{alt_centroid}_temporal.fasta'
                           with open(file_name_for_msa,'w') as temp_file:
                             for sequence_names in chunk:
