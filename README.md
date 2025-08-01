@@ -227,6 +227,11 @@ make install
 - **Palindrome and Motif Detection**: Detects palindromes and specific motifs using EMBOSS.
   - Citation: Rice P., Longden I., and Bleasby A. EMBOSS: The European Molecular Biology Open Software Suite. *Trends in Genetics*, 2000, 16(6):276-277.
 
+- **Domain identification**: Detects RNase H-like domains using RPS-BLAST with the the Conserved Domain Database (CDD).
+  - Citation: Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., & Madden, T. L. (2009). BLAST+: architecture and applications. BMC Bioinformatics, 10, 421, [DOI](https://doi.org/10.1186/1471-2105-10-421)
+  - Citation: Lu, S., Wang, J., Chitsaz, F., Derbyshire, M. K., Geer, R. C., Gonzales, N. R., Gwadz, M., Hurwitz, D. I., Marchler, G. H., Song, J. S., Thanki, N., Yamashita, R. A., Yang, M., Zhang, D., Zheng, C., Lanczycki, C. J., & Marchler-Bauer, A. (2020). CDD/SPARCLE: the conserved domain database in 2020. Nucleic Acids Research, 48(D1), D265–D268, [DOI](https://doi.org/10.1093/nar/gkz991)
+
+
 - **Annotated Sequence Alignments**: Outputs annotated sequence alignments.
 
 - **Clustal Calculation**: Uses the `calculate_cons` script for Clustal alignment from [fomightez/sequencework GitHub Repository](https://github.com/fomightez/sequencework.git).
