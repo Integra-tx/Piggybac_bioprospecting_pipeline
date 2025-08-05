@@ -532,7 +532,7 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
             dde_dicts = [d for d in domain_dicts if d is not None and "DDE" in d]
             if dde_dicts:
                 top_hit = max((d for d in domain_dicts if d is not None and "DDE" in d), key=lambda d: len(d["DDE"]) if d["DDE"] else 0)
-                top_hit['Full_dna'] = sequence
+                top_hit['Full_dna'] = rna_sequences[accession]
                 rna_res = rna_extract(accession, rna_sequences[accession])
                 if rna_res:
                     top_hit['rDNA'] = f"{rna_res[0]}: {rna_res[1]}"
