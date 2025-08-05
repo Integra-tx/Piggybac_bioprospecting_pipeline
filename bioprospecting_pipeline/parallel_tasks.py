@@ -546,8 +546,10 @@ def extract_orfs(sequence, min_length, accession, blast_path, blast_db, complete
                 	top_hit['Taxonomy'] = taxonomy_classification
                 else:
                     print(f'Taxonomy for {species_name} not found')
-                	
-                return top_hit
+                if rna_res:
+                    return top_hit
+                else:
+                    return None
             else:
                 return None
 
