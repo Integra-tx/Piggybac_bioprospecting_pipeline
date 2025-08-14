@@ -45,10 +45,10 @@ Before running the pipeline, configure the `config.yaml` file. Specify the follo
 - `pipeline_step`: Version of the pipeline to run. (1-4)
 
 Pipeline versions:
-- Run only identification and extraction of Piggybacs from genomes: 1
-- Run pipeline without Piggybac identification and extraction: 2 (User must give file location in `config.yaml` in the option `frahmmer_path` of a fasta file with Piggybac sequences)  
-- Run complete pipeline: 3
-- Run complete pipeline without Piggybac identification: 4 (User must have results Piggybac identification results from Frahmmer in the folder Frahmmer_results)
+- Run only identification and extraction of Piggybacs from genomes: `1`
+- Run pipeline without Piggybac identification and extraction: `2` (User must give file location in `config.yaml` in the option `frahmmer_path` of a fasta file with Piggybac sequences)  
+- Run complete pipeline: `3`
+- Run complete pipeline without Piggybac identification: `4` (User must have results Piggybac identification results from Frahmmer in the folder Frahmmer_results)
 
 Run the main pipeline:
 
