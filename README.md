@@ -42,9 +42,13 @@ Before running the pipeline, configure the `config.yaml` file. Specify the follo
 - `output_path`: The directory where the output will be stored.
 - `rspblast_path`: The path to the `rpsblast` executable.
 - `database_path`: The path to the RPSBLAST database.
-- `pipeline_step`: Version of the pipeline to run. (1-5)
+- `pipeline_step`: Version of the pipeline to run. (1-4)
 
 Pipeline versions:
+- Run only identification and extraction of Piggybacs from genomes: 1
+- Run pipeline without Piggybac identification and extraction: 2 (User must give file location in config.yaml(frahmmer_path) of a fasta file with your sequences)  
+- Run complete pipeline: 3
+- Run complete pipeline without Piggybac identification: 4 (User must have results Piggybac identification results from Frahmmer in the folder Frahmmer_results)
 
 Run the main pipeline:
 
