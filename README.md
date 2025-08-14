@@ -19,8 +19,6 @@ A Python-based bioinformatics pipeline for recovering piggyBac transposons and t
 
 ## Quick Start
 
-## Clone the Repository
-
 Start by cloning the repository:
 
 ```bash
