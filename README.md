@@ -39,17 +39,17 @@ Install the required Python dependencies:
 python3 -m pip install -r requirements.txt
 ```
 
-Run the main pipeline:
-
-```bash
-python3 bioprospecting_pipeline/main.py
-```
-
 Before running the pipeline, configure the `config.yaml` file. Specify the following paths:
 - `input_path`: The directory containing your genome files.
 - `output_path`: The directory where the output will be stored.
 - `rspblast_path`: The path to the `rpsblast` executable.
 - `database_path`: The path to the RPSBLAST database.
+
+Run the main pipeline:
+
+```bash
+python3 bioprospecting_pipeline/main.py
+```
 
 ## Additional Requirements
 
@@ -89,8 +89,6 @@ Add the following line at the end:
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
-
-Save and exit the file (Press `CTRL + O` to save and `CTRL + X` to exit).
 
 Reload the configuration:
 
