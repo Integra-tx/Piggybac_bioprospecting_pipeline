@@ -42,6 +42,9 @@ Before running the pipeline, configure the `config.yaml` file. Specify the follo
 - `output_path`: The directory where the output will be stored.
 - `rspblast_path`: The path to the `rpsblast` executable.
 - `database_path`: The path to the RPSBLAST database.
+- `pipeline_step`: Version of the pipeline to run. (1-5)
+
+Pipeline versions:
 
 Run the main pipeline:
 
